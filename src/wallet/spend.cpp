@@ -26,6 +26,7 @@
 #include <wallet/coincontrol.h>
 #include <wallet/fees.h>
 #include <wallet/receive.h>
+#include <wallet/recycle.h>
 #include <wallet/spend.h>
 #include <wallet/transaction.h>
 #include <wallet/wallet.h>
@@ -339,6 +340,10 @@ CoinsResult AvailableCoins(const CWallet& wallet,
     for (const auto& [outpoint, txo] : wallet.GetTXOs()) {
         const CWalletTx& wtx = txo.GetWalletTx();
         const CTxOut& output = txo.GetTxOut();
+
+        // Expired outputs remain in wallet history but no longer exist in the
+        // consensus UTXO set, so they must never enter coin selection.
+        if (IsWalletTxExpired(wtx, wallet.GetLastBlockHeight())) continue;
 
         if (tx_safe_cache.contains(outpoint.hash) && !tx_safe_cache.at(outpoint.hash).first) {
             continue;

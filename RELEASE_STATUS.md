@@ -14,6 +14,8 @@ Date: 2026-08-03
 - Per-block integer ASERT using a two-day half-life and the genesis anchor.
 - ReSatoshi mainnet message bytes, port, Bech32 HRP, Base58 namespaces, and
   removal of inherited Bitcoin mainnet seeds/assumptions.
+- Wallet balance, address-balance, and coin-selection paths exclude expired
+  outputs while retaining the historical wallet transaction.
 
 ## Verification performed
 
@@ -21,6 +23,9 @@ Date: 2026-08-03
 - Genesis generator cross-check: passed.
 - 35 focused ASERT, Recycle Pool, UTXO cache, and DB tests: passed.
 - Live regtest block connect/invalidate/reconsider: `3 -> 2 -> 3`, passed.
+- Wallet-enabled `test_bitcoin` compile and link (503 build steps): passed.
+- Wallet expiry visibility boundary test and the 35 focused consensus tests:
+  passed after wallet integration.
 
 ## Known test debt
 
@@ -29,7 +34,7 @@ Date: 2026-08-03
   every candidate timestamp, so this fixture still needs an ASERT-native block
   sequence. The failure is currently `bad-txns-nonfinal` in the fixture's
   relative-lock scenario, not a live-node connect/reorg failure.
-- The complete upstream functional suite, wallet-enabled build, GUI build,
+- The complete upstream functional suite, GUI build,
   fuzzing, sanitizer runs, multi-node synchronization, long reorg simulation,
   and expiry-height-scale test have not yet been completed.
 - Public DNS seeds, signed reproducible releases, long-running public testnet,

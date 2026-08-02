@@ -6,6 +6,7 @@
 #include <consensus/consensus.h>
 #include <util/check.h>
 #include <wallet/receive.h>
+#include <wallet/recycle.h>
 #include <wallet/transaction.h>
 #include <wallet/wallet.h>
 
@@ -252,6 +253,10 @@ Balance GetBalance(const CWallet& wallet, const int min_depth, bool avoid_reuse,
         for (const auto& [outpoint, txo] : wallet.GetTXOs()) {
             const CWalletTx& wtx = txo.GetWalletTx();
 
+            // The wallet can retain historical transactions after chainstate has
+            // recycled their outputs. Never report those outputs as balance.
+            if (IsWalletTxExpired(wtx, wallet.GetLastBlockHeight())) continue;
+
             const bool is_trusted{CachedTxIsTrusted(wallet, wtx, trusted_parents)};
             const int tx_depth{wallet.GetTxDepthInMainChain(wtx)};
 
@@ -303,6 +308,8 @@ std::map<CTxDestination, CAmount> GetAddressBalances(const CWallet& wallet)
         std::set<Txid> trusted_parents;
         for (const auto& [outpoint, txo] : wallet.GetTXOs()) {
             const CWalletTx& wtx = txo.GetWalletTx();
+
+            if (IsWalletTxExpired(wtx, wallet.GetLastBlockHeight())) continue;
 
             if (!CachedTxIsTrusted(wallet, wtx, trusted_parents)) continue;
             if (wallet.IsTxImmatureCoinBase(wtx)) continue;

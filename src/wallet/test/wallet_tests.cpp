@@ -27,6 +27,7 @@
 #include <wallet/coincontrol.h>
 #include <wallet/context.h>
 #include <wallet/receive.h>
+#include <wallet/recycle.h>
 #include <wallet/spend.h>
 #include <wallet/test/util.h>
 #include <wallet/test/wallet_test_fixture.h>
@@ -44,6 +45,17 @@ static_assert(DEFAULT_TRANSACTION_MINFEE >= DEFAULT_MIN_RELAY_TX_FEE, "wallet mi
 static_assert(WALLET_INCREMENTAL_RELAY_FEE >= DEFAULT_INCREMENTAL_RELAY_FEE, "wallet incremental fee is smaller than default incremental relay fee");
 
 BOOST_FIXTURE_TEST_SUITE(wallet_tests, WalletTestingSetup)
+
+BOOST_AUTO_TEST_CASE(recycle_expiry_visibility)
+{
+    const auto tx{MakeTransactionRef(CMutableTransaction{})};
+    const CWalletTx confirmed{tx, TxStateConfirmed{uint256::ONE, /*height=*/100, /*index=*/0}};
+    const CWalletTx unconfirmed{tx, TxStateInMempool{}};
+
+    BOOST_CHECK(!IsWalletTxExpired(confirmed, 100 + Consensus::UTXO_EXPIRY_AGE - 1));
+    BOOST_CHECK(IsWalletTxExpired(confirmed, 100 + Consensus::UTXO_EXPIRY_AGE));
+    BOOST_CHECK(!IsWalletTxExpired(unconfirmed, 100 + Consensus::UTXO_EXPIRY_AGE));
+}
 
 static CMutableTransaction TestSimpleSpend(const CTransaction& from, uint32_t index, const CKey& key, const CScript& pubkey)
 {
