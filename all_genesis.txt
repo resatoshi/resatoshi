@@ -1,0 +1,124 @@
+e858d64f90e4914124386283e68bfb75355c738b8ae2c58d80680e5111466abc
+a04e7ebba212af30214932a5d236f1fd0cfac48d60618aaa6259c8044a74bc0d
+085bba4a54786359b7aab60aac89769ace6fa10986bb6411486dde5f062166b2
+a04e7ebba212af30214932a5d236f1fd0cfac48d60618aaa6259c8044a74bc0d
+085bba4a54786359b7aab60aac89769ace6fa10986bb6411486dde5f062166b2
+a04e7ebba212af30214932a5d236f1fd0cfac48d60618aaa6259c8044a74bc0d
+085bba4a54786359b7aab60aac89769ace6fa10986bb6411486dde5f062166b2
+a04e7ebba212af30214932a5d236f1fd0cfac48d60618aaa6259c8044a74bc0d
+e858d64f90e4914124386283e68bfb75355c738b8ae2c58d80680e5111466abc
+a04e7ebba212af30214932a5d236f1fd0cfac48d60618aaa6259c8044a74bc0d
+2026-08-01T15:48:18Z ReSatoshi version v31.99.0-67de5935e294-dirty (release build)
+2026-08-01T15:48:18Z Log output may contain privacy-sensitive information. Be cautious when sharing logs.
+2026-08-01T15:48:18Z Using the 'x86_shani(1way;2way)' SHA256 implementation
+2026-08-01T15:48:18Z Using RdSeed as an additional entropy source
+2026-08-01T15:48:18Z Using RdRand as an additional entropy source
+2026-08-01T15:48:18Z Default data directory /home/resatoshi/.bitcoin
+2026-08-01T15:48:18Z Using data directory /home/resatoshi/.bitcoin
+2026-08-01T15:48:18Z Config file: /home/resatoshi/.bitcoin/bitcoin.conf (not found, skipping)
+2026-08-01T15:48:18Z Command-line arg: printtoconsole=""
+2026-08-01T15:48:18Z Using at most 200 automatic connections (10240 file descriptors available)
+2026-08-01T15:48:18Z scheduler thread start
+2026-08-01T15:48:18Z Binding RPC on address ::1 port 8332
+2026-08-01T15:48:18Z Binding RPC on address 127.0.0.1 port 8332
+2026-08-01T15:48:18Z Generated RPC authentication cookie /home/resatoshi/.bitcoin/.cookie
+2026-08-01T15:48:18Z Permissions used for cookie: rw-------
+2026-08-01T15:48:18Z Using random cookie authentication.
+2026-08-01T15:48:18Z Starting HTTP server with 16 worker threads
+2026-08-01T15:48:18Z http.00 thread start
+2026-08-01T15:48:18Z http.01 thread start
+2026-08-01T15:48:18Z http.02 thread start
+2026-08-01T15:48:18Z http.03 thread start
+2026-08-01T15:48:18Z http.04 thread start
+2026-08-01T15:48:18Z http.05 thread start
+2026-08-01T15:48:18Z http.06 thread start
+2026-08-01T15:48:18Z http.08 thread start
+2026-08-01T15:48:18Z http.09 thread start
+2026-08-01T15:48:18Z http.07 thread start
+2026-08-01T15:48:18Z http.10 thread start
+2026-08-01T15:48:18Z http.11 thread start
+2026-08-01T15:48:18Z http.12 thread start
+2026-08-01T15:48:18Z http.13 thread start
+2026-08-01T15:48:18Z http.14 thread start
+2026-08-01T15:48:18Z http.15 thread start
+2026-08-01T15:48:18Z Using wallet directory /home/resatoshi/.bitcoin/wallets
+2026-08-01T15:48:18Z http thread start
+2026-08-01T15:48:18Z Using SQLite Version 3.46.1
+2026-08-01T15:48:18Z init message: Verifying wallet(s)…
+2026-08-01T15:48:18Z Using /16 prefix for IP bucketing
+2026-08-01T15:48:18Z init message: Loading P2P addresses…
+2026-08-01T15:48:18Z Creating peers.dat because the file was not found ("/home/resatoshi/.bitcoin/peers.dat")
+2026-08-01T15:48:18Z init message: Loading banlist…
+2026-08-01T15:48:18Z Recreating the banlist database
+2026-08-01T15:48:18Z SetNetworkActive: true
+2026-08-01T15:48:18Z /home/resatoshi/.bitcoin/fee_estimates.dat is not found. Continue anyway.
+2026-08-01T15:48:18Z Cache configuration:
+2026-08-01T15:48:18Z * Using 2.0 MiB for block index database
+2026-08-01T15:48:18Z * Using 8.0 MiB for chain state database
+2026-08-01T15:48:18Z * Using 1014.0 MiB for in-memory UTXO set (plus up to 286.1 MiB of unused mempool space)
+2026-08-01T15:48:18Z Script verification uses 15 additional threads
+2026-08-01T15:48:18Z Using obfuscation key for blocksdir *.dat files (/home/resatoshi/.bitcoin/blocks): 'c96b5b74553ce0d5'
+2026-08-01T15:48:18Z Opening LevelDB in /home/resatoshi/.bitcoin/blocks/index
+2026-08-01T15:48:18Z Opened LevelDB successfully
+2026-08-01T15:48:18Z Using obfuscation key for /home/resatoshi/.bitcoin/blocks/index: 0000000000000000
+2026-08-01T15:48:18Z Using 16 MiB out of 16 MiB requested for signature cache, able to store 524288 elements
+2026-08-01T15:48:18Z Using 16 MiB out of 16 MiB requested for script execution cache, able to store 524288 elements
+2026-08-01T15:48:18Z init message: Loading block index…
+2026-08-01T15:48:18Z Assuming ancestors of block 00000000000000000000ccebd6d74d9194d8dcdc1d177c478e094bfad51ba5ac have valid signatures.
+2026-08-01T15:48:18Z Setting nMinimumChainWork=0000000000000000000000000000000000000001128750f82f4c366153a3a030
+2026-08-01T15:48:18Z Loading block index db: last block file = 0
+2026-08-01T15:48:18Z Loading block index db: last block file info: CBlockFileInfo(blocks=0, size=0, heights=0...0, time=1970-01-01...1970-01-01)
+2026-08-01T15:48:18Z Checking all blk files are present...
+2026-08-01T15:48:18Z Initializing chainstate Chainstate [ibd] @ height -1 (null)
+2026-08-01T15:48:18Z Opening LevelDB in /home/resatoshi/.bitcoin/chainstate
+2026-08-01T15:48:18Z Opened LevelDB successfully
+2026-08-01T15:48:18Z Wrote new obfuscation key for /home/resatoshi/.bitcoin/chainstate: 121511536c4df9b3
+2026-08-01T15:48:18Z Using obfuscation key for /home/resatoshi/.bitcoin/chainstate: 121511536c4df9b3
+2026-08-01T15:48:18Z prevout.00 thread start
+2026-08-01T15:48:18Z prevout.01 thread start
+2026-08-01T15:48:18Z prevout.02 thread start
+2026-08-01T15:48:18Z prevout.03 thread start
+2026-08-01T15:48:18Z prevout.04 thread start
+2026-08-01T15:48:18Z prevout.05 thread start
+2026-08-01T15:48:18Z prevout.06 thread start
+2026-08-01T15:48:18Z Block input prevout fetching uses 8 additional threads
+2026-08-01T15:48:18Z init message: Verifying blocks…
+2026-08-01T15:48:18Z Block index and chainstate loaded
+2026-08-01T15:48:18Z prevout.07 thread start
+2026-08-01T15:48:18Z Setting NODE_NETWORK in non-prune mode
+2026-08-01T15:48:18Z initload thread start
+2026-08-01T15:48:18Z [error] Errors in block header at FlatFilePos(nFile=0, nPos=8) while reading block
+2026-08-01T15:48:18Z [error] A fatal internal error occurred, see debug.log for details: Failed to read block.
+Error: A fatal internal error occurred, see debug.log for details: Failed to read block.
+2026-08-01T15:48:18Z [error] A fatal internal error occurred, see debug.log for details: Chainstate [ibd] @ height -1 (null) Failed to connect best block (Failed to read block.)
+Error: A fatal internal error occurred, see debug.log for details: Chainstate [ibd] @ height -1 (null) Failed to connect best block (Failed to read block.)
+2026-08-01T15:48:18Z Failed to open mempool file. Continuing anyway.
+2026-08-01T15:48:18Z initload thread exit
+2026-08-01T15:48:18Z http.00 thread exit
+2026-08-01T15:48:18Z http.01 thread exit
+2026-08-01T15:48:18Z http.04 thread exit
+2026-08-01T15:48:18Z http.15 thread exit
+2026-08-01T15:48:18Z http.09 thread exit
+2026-08-01T15:48:18Z http.05 thread exit
+2026-08-01T15:48:18Z http.10 thread exit
+2026-08-01T15:48:18Z http.13 thread exit
+2026-08-01T15:48:18Z http.14 thread exit
+2026-08-01T15:48:18Z http.11 thread exit
+2026-08-01T15:48:18Z http.03 thread exit
+2026-08-01T15:48:18Z http.12 thread exit
+2026-08-01T15:48:18Z Shutdown in progress...
+2026-08-01T15:48:18Z http.07 thread exit
+2026-08-01T15:48:18Z http.06 thread exit
+2026-08-01T15:48:18Z http.02 thread exit
+2026-08-01T15:48:18Z http.08 thread exit
+2026-08-01T15:48:18Z http thread exit
+2026-08-01T15:48:18Z scheduler thread exit
+2026-08-01T15:48:18Z prevout.00 thread exit
+2026-08-01T15:48:18Z prevout.01 thread exit
+2026-08-01T15:48:18Z prevout.02 thread exit
+2026-08-01T15:48:18Z prevout.04 thread exit
+2026-08-01T15:48:18Z prevout.07 thread exit
+2026-08-01T15:48:18Z prevout.03 thread exit
+2026-08-01T15:48:18Z prevout.05 thread exit
+2026-08-01T15:48:18Z prevout.06 thread exit
+2026-08-01T15:48:18Z Shutdown done

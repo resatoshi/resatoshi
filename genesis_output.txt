@@ -1,0 +1,3 @@
+e858d64f90e4914124386283e68bfb75355c738b8ae2c58d80680e5111466abc
+a04e7ebba212af30214932a5d236f1fd0cfac48d60618aaa6259c8044a74bc0d
+bitcoind: ./kernel/chainparams.cpp:164: CMainParams::CMainParams(const CChainParams::MainNetOptions&): Assertion `genesis.hashMerkleRoot == uint256{"04e7ebda212af30214932a5d236f1fd0cfac486d60618aaa6259c8044a74bc0d"}' failed.
