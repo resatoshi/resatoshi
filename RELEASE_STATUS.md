@@ -26,6 +26,14 @@ Date: 2026-08-03
 - Wallet-enabled `test_bitcoin` compile and link (503 build steps): passed.
 - Wallet expiry visibility boundary test and the 35 focused consensus tests:
   passed after wallet integration.
+- Live two-node regtest synchronization: both peers reached height 102 with
+  identical best-block hashes.
+- Live wallet transfer between nodes: 12.5 RST relayed, mined, and credited
+  with one confirmation.
+- Live disconnect/reconsider wallet test: receiver balance changed
+  `12.5 -> 0 -> 12.5` and the original tip was restored.
+- Full node restart persistence test: height 102, best-block hash, and the
+  receiver's 12.5 RST balance were preserved.
 
 ## Known test debt
 
@@ -34,9 +42,10 @@ Date: 2026-08-03
   every candidate timestamp, so this fixture still needs an ASERT-native block
   sequence. The failure is currently `bad-txns-nonfinal` in the fixture's
   relative-lock scenario, not a live-node connect/reorg failure.
-- The complete upstream functional suite, GUI build,
-  fuzzing, sanitizer runs, multi-node synchronization, long reorg simulation,
-  and expiry-height-scale test have not yet been completed.
+- The complete upstream functional suite, GUI build, fuzzing, sanitizer runs,
+  long reorg simulation, and expiry-height-scale test have not yet been
+  completed. A basic two-node synchronization and transfer scenario has now
+  passed, but broader network partition and competing-chain scenarios remain.
 - Public DNS seeds, signed reproducible releases, long-running public testnet,
   and independent security review require external infrastructure or reviewers.
 
