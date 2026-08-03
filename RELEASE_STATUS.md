@@ -10,7 +10,7 @@ Date: 2026-08-03
 - Expiry-height chainstate buckets, persistent Recycle Pool balance, atomic DB
   writes, full block undo, and disconnect restoration.
 - Miner construction and consensus validation of Recycle Pool payouts.
-- 50 RST payout cap halving every 1,314,000 blocks.
+- Fixed Recycle Pool payout cap of 1 RST per block with no halving schedule.
 - Per-block integer ASERT using a two-day half-life and the genesis anchor.
 - ReSatoshi mainnet message bytes, port, Bech32 HRP, Base58 namespaces, and
   removal of inherited Bitcoin mainnet seeds/assumptions.
@@ -43,6 +43,11 @@ Date: 2026-08-03
 - Malformed Undo cases now reject out-of-range payout, invalid Coin value,
   overflowing creation height, duplicate entries, and inconsistent prior Pool
   balance without mutating live state.
+- Recurring-expiry long-horizon simulation: one 600,000 RST expiry batch every
+  ten years, from the 100-year boundary through year 600 (31,536,001 blocks).
+  All 51 expiry events continued to add to the Pool while every funded block
+  paid exactly 1 RST. Exact accounting, event-block Undo/reapply, optimized and
+  UBSan runs, and the final representable block-height boundary all passed.
 
 ## Known test debt
 

@@ -3,8 +3,6 @@
 #include <consensus/amount.h>
 #include <consensus/params.h>
 #include <consensus/recycle_state.h>
-#include <uint256.h>
-
 #include <cassert>
 #include <cstdint>
 #include <limits>
@@ -23,7 +21,7 @@ int main()
         Coin coin;
         coin.nHeight = created_height;
         coin.out.nValue = 1'000 + i;
-        const COutPoint outpoint{Txid::FromUint256(uint256::ONE), static_cast<uint32_t>(i)};
+        const COutPoint outpoint{Txid{}, static_cast<uint32_t>(i)};
         assert(state.Queue(outpoint, coin));
         assert(!state.Queue(outpoint, coin));
         entries.emplace_back(outpoint, coin);
