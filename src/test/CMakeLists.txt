@@ -85,6 +85,7 @@ add_executable(test_bitcoin
   random_tests.cpp
   rbf_tests.cpp
   recycle_pool_tests.cpp
+  resatoshi_identity_tests.cpp
   rest_tests.cpp
   result_tests.cpp
   reverselock_tests.cpp

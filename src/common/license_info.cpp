@@ -25,16 +25,16 @@ std::string CopyrightHolders(const std::string& strPrefix)
 
 std::string LicenseInfo()
 {
-    const std::string URL_SOURCE_CODE = "<https://github.com/bitcoin/bitcoin>";
-
     return CopyrightHolders(strprintf(_("Copyright (C) %i-%i"), 2009, COPYRIGHT_YEAR).translated + " ") + "\n" +
            "\n" +
-           strprintf(_("Please contribute if you find %s useful. "
-                       "Visit %s for further information about the software."),
-                     CLIENT_NAME, "<" CLIENT_URL ">")
+           strprintf(_("%s is experimental Bitcoin Core-derived software. "
+                       "The public project website and issue tracker have not been published yet."),
+                     CLIENT_NAME)
                .translated +
            "\n" +
-           strprintf(_("The source code is available from %s."), URL_SOURCE_CODE).translated +
+           _("The source code and current verification status are included in this distribution.") +
+           "\n" +
+           _("Upstream Bitcoin Core source: <https://github.com/bitcoin/bitcoin>.") +
            "\n" +
            "\n" +
            _("This is experimental software.") + "\n" +

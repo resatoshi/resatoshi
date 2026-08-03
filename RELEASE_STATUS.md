@@ -17,12 +17,19 @@ Date: 2026-08-03
 - Per-block integer ASERT using a two-day half-life and the genesis anchor.
 - ReSatoshi mainnet message bytes, port, Bech32 HRP, Base58 namespaces, and
   removal of inherited Bitcoin mainnet seeds/assumptions.
+- ReSatoshi executable names, default data directory, configuration file, and
+  PID file are isolated from Bitcoin Core (`resatoshid`, `resatoshi-cli`,
+  `.resatoshi`, `resatoshi.conf`, and `resatoshid.pid`).
+- The `-testnet` chain is now the ReSatoshi public alpha network with separate
+  message bytes, P2P/RPC ports, address encodings, data subdirectory, and no
+  inherited Bitcoin seeds or chain assumptions.
 - Wallet balance, address-balance, and coin-selection paths exclude expired
   outputs while retaining the historical wallet transaction.
 
 ## Verification performed
 
-- Full node and unit-test executable compile: passed.
+- An earlier pre-claimed-only checkpoint completed a full node and unit-test
+  executable build. That result does not cover the current packaging changes.
 - Genesis generator cross-check: passed.
 - 35 focused ASERT, Recycle Pool, UTXO cache, and DB tests: passed.
 - Live regtest block connect/invalidate/reconsider: `3 -> 2 -> 3`, passed.
@@ -65,6 +72,18 @@ Date: 2026-08-03
   UBSan runs; the checker also rejected deliberate one-satoshi inflation and
   one-satoshi loss. At year 600 the exact identity was
   `20,999,949.97690000 = 16,754,350.97690000 + 0 + 4,245,599.00000000 RST`.
+- Current alpha packaging verification: CMake configure/generate passed,
+  generated link/install rules name the programs `resatoshid` and
+  `resatoshi-cli`, changed command-line sources passed syntax-only compilation,
+  and the functional Python files passed bytecode compilation.
+- Current partial Generic build compiled the consensus, cryptography, LevelDB,
+  common argument, alpha chain-parameter, and most CLI modules. The full-node
+  aggregate stopped at 34% and the CLI target at 88% only when the unavailable
+  Boost headers were first included.
+- After the packaging changes, the optimized 1,000,000-transition Pool test,
+  10,000-UTXO expiry/Undo stress test, 600-year recurring-expiry test,
+  600-year whole-supply test, and 600-year malicious-underclaim test all passed.
+  Pool, expiry-state, and underclaim tests also passed UndefinedBehaviorSanitizer.
 
 ## Known test debt
 
@@ -87,6 +106,11 @@ Date: 2026-08-03
   not a substitute for the pending full sanitizer CI jobs.
 - Public DNS seeds, signed reproducible releases, long-running public testnet,
   and independent security review require external infrastructure or reviewers.
+- The alpha packaging and identity changes were made in a workspace without
+  CMake or Boost development headers. Static checks and dependency-free
+  consensus harnesses can run here, but a dependency-complete build and live
+  two-node alpha test are required before publishing binaries or opening the
+  public alpha network.
 
 ## Readiness assessment
 

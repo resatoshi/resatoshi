@@ -1,23 +1,15 @@
-Bitcoin Core
-=============
+ReSatoshi public alpha
+======================
 
-Intro
------
-Bitcoin is a free open source peer-to-peer electronic cash system that is
-completely decentralized, without the need for a central server or trusted
-parties.  Users hold the crypto keys to their own money and transact directly
-with each other, with the help of a P2P network to check for double-spending.
+ReSatoshi is an experimental Bitcoin Core-derived cryptocurrency prototype.
+The public alpha network may be reset and alpha RST has no monetary value.
 
+Run resatoshi-qt.exe and select the public alpha shortcut, or start
+resatoshid.exe with -testnet. ReSatoshi uses its own data directory and must
+never be pointed at a Bitcoin wallet or Bitcoin data directory.
 
-Setup
------
-Unpack the files into a directory and run bitcoin-qt.exe.
+Only the P2P port 49595 should be opened for public peer connections. Keep the
+RPC port 49594 local and private.
 
-Bitcoin Core is the original Bitcoin client and it builds the backbone of the network.
-However, it downloads and stores the entire history of Bitcoin transactions;
-depending on the speed of your computer and network connection, the synchronization
-process can take anywhere from a few hours to a day or more.
-
-See the bitcoin wiki at:
-  https://en.bitcoin.it/wiki/Main_Page
-for more help and information.
+See doc/resatoshi-alpha.md in the source distribution for the complete alpha
+warning, build, connection, mining, and reset instructions.

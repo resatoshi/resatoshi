@@ -36,9 +36,9 @@ must not be silently fixed in code.
    separate index database or a text file.
 3. **Coinbase composition:** transaction fees remain separate from Recycle
    accounting. A valid block may claim at most the ordinary subsidy, fees, and
-   computed Recycle payout. The scheduled Pool amount is debited whether or not
-   the miner claims all of it; an underclaim is therefore a deterministic burn,
-   preserving Bitcoin-compatible coinbase behavior without creating supply.
+   computed Recycle payout. Only the Recycle value actually claimed above the
+   ordinary subsidy and fees is debited from the Pool. An underclaim leaves the
+   unclaimed value in the Pool for a later block.
 4. **ASERT:** mainnet uses integer ASERT from genesis, with 600-second spacing
    and a two-day (172,800-second) half-life. Genesis is the anchor and its
    virtual parent time is genesis time minus one target interval. Public testnet
@@ -50,6 +50,10 @@ must not be silently fixed in code.
    39595, Bech32 HRP is `rs`, and legacy/extended-key versions are distinct
    from Bitcoin. Mainnet has no inherited seeds, assume-valid hash, chainwork,
    checkpoints, or assume-UTXO snapshots.
+7. **Public alpha identity:** the `-testnet` chain uses message start
+   `18 9a 6c 98`, P2P port `49595`, RPC port `49594`, Bech32 HRP `trs`, and an
+   isolated `alpha` data subdirectory. It has no inherited Bitcoin seeds,
+   chainwork, assume-valid hash, statistics, or assume-UTXO snapshots.
 
 ## Remaining release decisions
 
