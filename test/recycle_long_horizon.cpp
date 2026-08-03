@@ -4,7 +4,8 @@
 // Build example:
 //   c++ -std=c++20 -O2 -Isrc test/recycle_long_horizon.cpp
 //       src/consensus/recycle_pool.cpp src/consensus/recycle_state.cpp
-//       -o recycle_long_horizon  (write the three lines as one command)
+//       src/uint256.cpp src/crypto/hex_base.cpp -o recycle_long_horizon
+//   (write the four lines as one command)
 
 #include <consensus/amount.h>
 #include <consensus/params.h>

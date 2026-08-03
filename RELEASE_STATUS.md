@@ -48,6 +48,14 @@ Date: 2026-08-03
   All 51 expiry events continued to add to the Pool while every funded block
   paid exactly 1 RST. Exact accounting, event-block Undo/reapply, optimized and
   UBSan runs, and the final representable block-height boundary all passed.
+- Whole-supply 600-year simulation: ordinary block subsidy is the sole source
+  of new RST, and every one of 50 recurring 600,000 RST expiry batches is
+  funded by existing live UTXOs. After every one of 31,536,001 blocks, issued
+  subsidy exactly equalled liquid UTXOs plus queued live UTXOs plus the Recycle
+  Pool. The same identity passed expiry-block Undo/reapply and optimized and
+  UBSan runs; the checker also rejected deliberate one-satoshi inflation and
+  one-satoshi loss. At year 600 the exact identity was
+  `20,999,949.97690000 = 16,754,350.97690000 + 0 + 4,245,599.00000000 RST`.
 
 ## Known test debt
 

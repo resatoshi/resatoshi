@@ -84,5 +84,15 @@ must not be silently fixed in code.
   outpoint-to-expiry index rejects duplicate registration across heights. The
   10,000-entry expiry/undo stress test, its UndefinedBehavior build, and the
   one-million-transition Pool stress test pass after the fix.
+- A 600-year total-supply simulation funds every recurring expiry batch from
+  already-issued live UTXOs and checks the conservation identity after every
+  block: ordinary subsidy issued equals liquid UTXOs plus queued live UTXOs
+  plus the Recycle Pool. Expiry, fixed 1 RST payout, and expiry-block Undo and
+  reapplication must preserve the identity exactly down to one satoshi.
+- Zero issuance in the genesis block, followed by the inherited 50 RST subsidy
+  and 210,000-block halvings, produces an exact eventual ordinary issuance of
+  20,999,949.97690000 RST. The difference from the nominal 21 million cap is
+  the 50 RST not issued at genesis plus 0.0231 RST of integer-halving
+  truncation; it is not caused by Recycle Pool accounting.
 
 This code is experimental and is not ready for a value-bearing mainnet.
