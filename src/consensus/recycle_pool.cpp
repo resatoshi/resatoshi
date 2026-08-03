@@ -13,9 +13,7 @@ namespace Consensus {
 CAmount GetRecyclePayoutCap(int block_height)
 {
     if (block_height < 0) return 0;
-    const int reductions{block_height / RECYCLE_PAYOUT_REDUCTION_INTERVAL};
-    if (reductions >= 64) return 0;
-    return INITIAL_RECYCLE_PAYOUT_CAP >> reductions;
+    return RECYCLE_PAYOUT_CAP;
 }
 
 std::optional<CAmount> GetRecyclePayout(

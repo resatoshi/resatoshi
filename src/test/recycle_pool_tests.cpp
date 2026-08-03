@@ -41,15 +41,13 @@ BOOST_AUTO_TEST_CASE(rejects_invalid_accounting)
     BOOST_CHECK(!Consensus::UpdateRecyclePool(MAX_MONEY, 1));
 }
 
-BOOST_AUTO_TEST_CASE(payout_reduces_every_twenty_five_years)
+BOOST_AUTO_TEST_CASE(payout_cap_is_fixed_forever)
 {
-    constexpr int interval{Consensus::RECYCLE_PAYOUT_REDUCTION_INTERVAL};
-    BOOST_CHECK_EQUAL(interval, 1'314'000);
-    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(0), 50 * COIN);
-    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(interval - 1), 50 * COIN);
-    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(interval), 25 * COIN);
-    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(4 * interval), 3 * COIN + COIN / 8);
-    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(64 * interval), 0);
+    BOOST_CHECK_EQUAL(Consensus::RECYCLE_PAYOUT_CAP, 1 * COIN);
+    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(0), 1 * COIN);
+    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(1'314'000), 1 * COIN);
+    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(Consensus::UTXO_EXPIRY_AGE), 1 * COIN);
+    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(std::numeric_limits<int>::max()), 1 * COIN);
     BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(-1), 0);
 }
 
@@ -57,15 +55,23 @@ BOOST_AUTO_TEST_CASE(payout_is_limited_by_available_pool)
 {
     const auto full_cap{Consensus::GetRecyclePayout(0, 100 * COIN, 0)};
     BOOST_REQUIRE(full_cap);
-    BOOST_CHECK_EQUAL(*full_cap, 50 * COIN);
+    BOOST_CHECK_EQUAL(*full_cap, 1 * COIN);
 
-    const auto partial{Consensus::GetRecyclePayout(0, 2 * COIN, COIN)};
+    const auto partial{Consensus::GetRecyclePayout(0, COIN / 4, COIN / 4)};
     BOOST_REQUIRE(partial);
-    BOOST_CHECK_EQUAL(*partial, 3 * COIN);
+    BOOST_CHECK_EQUAL(*partial, COIN / 2);
 
     const auto newly_expired{Consensus::GetRecyclePayout(0, 0, 7 * COIN)};
     BOOST_REQUIRE(newly_expired);
-    BOOST_CHECK_EQUAL(*newly_expired, 7 * COIN);
+    BOOST_CHECK_EQUAL(*newly_expired, 1 * COIN);
+
+    const auto final_satoshi{Consensus::GetRecyclePayout(std::numeric_limits<int>::max(), 1, 0)};
+    BOOST_REQUIRE(final_satoshi);
+    BOOST_CHECK_EQUAL(*final_satoshi, 1);
+
+    const auto empty{Consensus::GetRecyclePayout(0, 0, 0)};
+    BOOST_REQUIRE(empty);
+    BOOST_CHECK_EQUAL(*empty, 0);
 
     BOOST_CHECK(!Consensus::GetRecyclePayout(-1, 0, 0));
     BOOST_CHECK(!Consensus::GetRecyclePayout(0, -1, 0));
@@ -152,14 +158,6 @@ BOOST_AUTO_TEST_CASE(rejects_malformed_queue_and_undo_without_mutation)
     Coin invalid_value{valid};
     invalid_value.out.nValue = -1;
     BOOST_CHECK(!state.Queue(COutPoint{Txid::FromUint256(uint256::ONE), 1}, invalid_value));
-}
-
-BOOST_AUTO_TEST_CASE(payout_satoshi_truncation_boundaries)
-{
-    constexpr int interval{Consensus::RECYCLE_PAYOUT_REDUCTION_INTERVAL};
-    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(32 * interval), 1);
-    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(33 * interval), 0);
-    BOOST_CHECK_EQUAL(Consensus::GetRecyclePayoutCap(std::numeric_limits<int>::max()), 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -15,11 +15,11 @@ must not be silently fixed in code.
   `Consensus::UTXO_EXPIRY_AGE`.
 - Value from expired UTXOs enters a Recycle Pool and is redistributed through
   block rewards.
-- Recycle Pool payout uses a fixed 1,314,000-block era (25 years at the target
-  spacing). Its per-block cap starts at 50 RST and halves at every era boundary.
-  The actual payout is the smaller of the cap and the available Pool balance.
-  A block's newly expired value is added before its payout is calculated. An
-  empty Pool pays zero; integer satoshi arithmetic leaves no fractional dust.
+- Recycle Pool payout has no halving schedule. Its per-block cap is fixed at
+  1 RST forever. The actual payout is the smaller of 1 RST and the available
+  Pool balance. A block's newly expired value is added before its payout is
+  calculated. An empty Pool pays zero; a Pool balance below 1 RST is paid in
+  full, down to the final satoshi.
 - Difficulty adjustment will use an ASERT-family per-block algorithm rather
   than Bitcoin's 2,016-block retarget.
 
@@ -68,6 +68,9 @@ must not be silently fixed in code.
 - Spending a UTXO at age 5,256,000 or later is rejected by consensus input
   validation. The boundary and overflow-safe, reversible Recycle Pool balance
   arithmetic have unit tests.
+- Recycle payout is capped at a fixed 1 RST per block with no reduction eras.
+  Tests cover an empty Pool, a sub-cap final balance, the exact cap, newly
+  expired value, and the maximum representable block height.
 - Expiry buckets, Pool balance persistence, block connection/disconnection,
   full expiry undo, miner payout construction, and exact coinbase validation
   are connected to the chainstate path.

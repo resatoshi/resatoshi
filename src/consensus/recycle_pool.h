@@ -11,9 +11,8 @@
 
 namespace Consensus {
 
-/** Fixed 25-year payout era at the 10-minute target spacing. */
-static constexpr int RECYCLE_PAYOUT_REDUCTION_INTERVAL{1'314'000};
-static constexpr CAmount INITIAL_RECYCLE_PAYOUT_CAP{50 * COIN};
+/** Fixed maximum Recycle Pool payout per block; it never halves. */
+static constexpr CAmount RECYCLE_PAYOUT_CAP{1 * COIN};
 
 /** Whether an output created at coin_height is expired in spend_height. */
 constexpr bool IsUTXOExpired(int coin_height, int spend_height)
@@ -53,7 +52,7 @@ CAmount GetRecyclePayoutCap(int block_height);
 
 /**
  * Deterministic payout for a block. Newly expired value is available before
- * payout. The result is min(available pool, the era's payout cap).
+ * payout. The result is min(available pool, the fixed payout cap).
  */
 std::optional<CAmount> GetRecyclePayout(
     int block_height, CAmount balance_before, CAmount expired_value);

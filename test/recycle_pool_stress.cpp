@@ -36,13 +36,20 @@ int main()
     assert(!Consensus::UpdateRecyclePool(MAX_MONEY, 1, 0));
     assert(!Consensus::UpdateRecyclePool(std::numeric_limits<CAmount>::max(), 1, 0));
 
-    // Exact era boundaries and satoshi truncation.
-    constexpr int interval{Consensus::RECYCLE_PAYOUT_REDUCTION_INTERVAL};
-    assert(Consensus::GetRecyclePayoutCap(interval - 1) == 50 * COIN);
-    assert(Consensus::GetRecyclePayoutCap(interval) == 25 * COIN);
-    assert(Consensus::GetRecyclePayoutCap(32 * interval) == 1);
-    assert(Consensus::GetRecyclePayoutCap(33 * interval) == 0);
-    assert(Consensus::GetRecyclePayoutCap(std::numeric_limits<int>::max()) == 0);
+    // The per-block cap is exactly 1 RST and never halves, even at the
+    // largest representable block height.
+    assert(Consensus::GetRecyclePayoutCap(0) == COIN);
+    assert(Consensus::GetRecyclePayoutCap(1'314'000) == COIN);
+    assert(Consensus::GetRecyclePayoutCap(Consensus::UTXO_EXPIRY_AGE) == COIN);
+    assert(Consensus::GetRecyclePayoutCap(std::numeric_limits<int>::max()) == COIN);
+    assert(Consensus::GetRecyclePayoutCap(-1) == 0);
+
+    const auto under_cap{Consensus::GetRecyclePayout(0, COIN / 2, 0)};
+    assert(under_cap && *under_cap == COIN / 2);
+    const auto over_cap{Consensus::GetRecyclePayout(0, 10 * COIN, 0)};
+    assert(over_cap && *over_cap == COIN);
+    const auto final_satoshi{Consensus::GetRecyclePayout(std::numeric_limits<int>::max(), 1, 0)};
+    assert(final_satoshi && *final_satoshi == 1);
 
     return 0;
 }
