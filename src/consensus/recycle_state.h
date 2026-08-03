@@ -47,6 +47,7 @@ class RecycleState {
 private:
     CAmount m_pool_balance{0};
     std::map<int, std::map<COutPoint, Coin>> m_expiry_buckets;
+    std::map<COutPoint, int> m_outpoint_expiry;
 
 public:
     CAmount PoolBalance() const { return m_pool_balance; }

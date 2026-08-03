@@ -30,6 +30,18 @@ int main()
     }
     assert(state.BucketSize(expiry_height) == count);
 
+    // Removal must match the exact queued Coin. An outpoint paired with
+    // different metadata must not be able to delete the real expiry entry.
+    Coin mismatched_coin{entries.front().second};
+    ++mismatched_coin.out.nValue;
+    assert(!state.Unqueue(entries.front().first, mismatched_coin));
+    assert(state.BucketSize(expiry_height) == count);
+
+    Coin different_height{entries.front().second};
+    ++different_height.nHeight;
+    assert(!state.Queue(entries.front().first, different_height));
+    assert(state.BucketSize(expiry_height + 1) == 0);
+
     CAmount expected_expired{0};
     for (int i = 0; i < count; ++i) {
         if ((i % 2) == 0) {

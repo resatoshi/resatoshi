@@ -75,5 +75,11 @@ must not be silently fixed in code.
 - Bitcoin mainnet seeds, chain statistics, assume-valid data, assume-UTXO data,
   address encodings, and buried activation heights have been removed or
   replaced for ReSatoshi mainnet.
+- Adversarial RecycleState testing found and fixed an invariant violation where
+  an outpoint paired with mismatched Coin metadata could remove the genuine
+  expiry entry. Removal now requires an exact Coin match, and a global
+  outpoint-to-expiry index rejects duplicate registration across heights. The
+  10,000-entry expiry/undo stress test, its UndefinedBehavior build, and the
+  one-million-transition Pool stress test pass after the fix.
 
 This code is experimental and is not ready for a value-bearing mainnet.
