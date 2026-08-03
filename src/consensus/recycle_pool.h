@@ -51,11 +51,21 @@ std::optional<RecyclePoolUpdate> UpdateRecyclePool(
 CAmount GetRecyclePayoutCap(int block_height);
 
 /**
- * Deterministic payout for a block. Newly expired value is available before
- * payout. The result is min(available pool, the fixed payout cap).
+ * Deterministic maximum payout allowance for a block. Newly expired value is
+ * available before payout. The result is min(available pool, fixed cap).
  */
-std::optional<CAmount> GetRecyclePayout(
+std::optional<CAmount> GetRecyclePayoutAllowance(
     int block_height, CAmount balance_before, CAmount expired_value);
+
+/**
+ * Recycle value actually claimed by a coinbase transaction.
+ *
+ * Ordinary subsidy and transaction fees are accounted for first. Only the
+ * coinbase value above ordinary_reward is charged to the Recycle Pool, up to
+ * recycle_allowance. A coinbase above the combined limit is invalid.
+ */
+std::optional<CAmount> GetClaimedRecyclePayout(
+    CAmount coinbase_value, CAmount ordinary_reward, CAmount recycle_allowance);
 
 } // namespace Consensus
 

@@ -186,7 +186,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
         }
         expired_value += coin.out.nValue;
     }
-    const auto recycle_payout{Consensus::GetRecyclePayout(
+    const auto recycle_payout{Consensus::GetRecyclePayoutAllowance(
         nHeight, m_chainstate.CoinsTip().GetRecyclePoolBalance(), expired_value)};
     if (!recycle_payout) throw std::runtime_error("Recycle Pool accounting failed while building block");
 

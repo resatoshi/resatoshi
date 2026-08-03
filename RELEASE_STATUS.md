@@ -11,6 +11,9 @@ Date: 2026-08-03
   writes, full block undo, and disconnect restoration.
 - Miner construction and consensus validation of Recycle Pool payouts.
 - Fixed Recycle Pool payout cap of 1 RST per block with no halving schedule.
+- The Pool is debited only for Recycle value actually claimed above the
+  ordinary subsidy and transaction fees; an underclaim leaves the remainder
+  available to later blocks.
 - Per-block integer ASERT using a two-day half-life and the genesis anchor.
 - ReSatoshi mainnet message bytes, port, Bech32 HRP, Base58 namespaces, and
   removal of inherited Bitcoin mainnet seeds/assumptions.
@@ -38,6 +41,12 @@ Date: 2026-08-03
   valid transitions preserved exact accounting under both optimized and UBSan
   builds. Invalid, overflow-adjacent, era-boundary, and satoshi-truncation
   cases were also checked.
+- Claimed-only payout stress: 1,000,000 deterministic coinbase underclaim
+  combinations verified that only value above ordinary subsidy and fees leaves
+  the Pool, while excess claims and invalid reward ranges are rejected.
+- Claimed-only 600-year simulation: full, partial, and zero Recycle claims were
+  mixed across 31,536,001 blocks. Every expiry-block Undo/reapply restored the
+  exact prior Pool state, and `expired = claimed + Pool` held throughout.
 - Expiry/reorg state stress: 10,000 queued UTXOs, 5,000 pre-expiry spends,
   bulk expiry, payout, and exact Undo restoration passed under UBSan.
 - Malformed Undo cases now reject out-of-range payout, invalid Coin value,
@@ -59,6 +68,11 @@ Date: 2026-08-03
 
 ## Known test debt
 
+- This workspace did not provide CMake or Boost headers, so the full node and
+  `test_bitcoin` could not be rebuilt after the claimed-only payout change.
+  The dependency-free consensus harnesses compiled and passed in optimized and
+  UndefinedBehaviorSanitizer builds, but a dependency-complete CI rebuild is
+  still required.
 - The inherited `miner_tests/CreateNewBlock_validity` fixture uses Bitcoin's
   hard-coded timestamp/relative-lock schedule. ASERT makes difficulty depend on
   every candidate timestamp, so this fixture still needs an ASERT-native block

@@ -16,7 +16,7 @@ CAmount GetRecyclePayoutCap(int block_height)
     return RECYCLE_PAYOUT_CAP;
 }
 
-std::optional<CAmount> GetRecyclePayout(
+std::optional<CAmount> GetRecyclePayoutAllowance(
     int block_height, CAmount balance_before, CAmount expired_value)
 {
     if (block_height < 0 || balance_before < 0 || expired_value < 0) return std::nullopt;
@@ -26,6 +26,21 @@ std::optional<CAmount> GetRecyclePayout(
     const CAmount available{balance_before + expired_value};
     if (!MoneyRange(available)) return std::nullopt;
     return std::min(available, GetRecyclePayoutCap(block_height));
+}
+
+std::optional<CAmount> GetClaimedRecyclePayout(
+    CAmount coinbase_value, CAmount ordinary_reward, CAmount recycle_allowance)
+{
+    if (!MoneyRange(coinbase_value) || !MoneyRange(ordinary_reward) ||
+        !MoneyRange(recycle_allowance)) {
+        return std::nullopt;
+    }
+    if (recycle_allowance > MAX_MONEY - ordinary_reward) return std::nullopt;
+
+    const CAmount maximum_reward{ordinary_reward + recycle_allowance};
+    if (coinbase_value > maximum_reward) return std::nullopt;
+    if (coinbase_value <= ordinary_reward) return 0;
+    return coinbase_value - ordinary_reward;
 }
 
 std::optional<RecyclePoolUpdate> UpdateRecyclePool(

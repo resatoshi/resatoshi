@@ -53,29 +53,64 @@ BOOST_AUTO_TEST_CASE(payout_cap_is_fixed_forever)
 
 BOOST_AUTO_TEST_CASE(payout_is_limited_by_available_pool)
 {
-    const auto full_cap{Consensus::GetRecyclePayout(0, 100 * COIN, 0)};
+    const auto full_cap{Consensus::GetRecyclePayoutAllowance(0, 100 * COIN, 0)};
     BOOST_REQUIRE(full_cap);
     BOOST_CHECK_EQUAL(*full_cap, 1 * COIN);
 
-    const auto partial{Consensus::GetRecyclePayout(0, COIN / 4, COIN / 4)};
+    const auto partial{Consensus::GetRecyclePayoutAllowance(0, COIN / 4, COIN / 4)};
     BOOST_REQUIRE(partial);
     BOOST_CHECK_EQUAL(*partial, COIN / 2);
 
-    const auto newly_expired{Consensus::GetRecyclePayout(0, 0, 7 * COIN)};
+    const auto newly_expired{Consensus::GetRecyclePayoutAllowance(0, 0, 7 * COIN)};
     BOOST_REQUIRE(newly_expired);
     BOOST_CHECK_EQUAL(*newly_expired, 1 * COIN);
 
-    const auto final_satoshi{Consensus::GetRecyclePayout(std::numeric_limits<int>::max(), 1, 0)};
+    const auto final_satoshi{Consensus::GetRecyclePayoutAllowance(std::numeric_limits<int>::max(), 1, 0)};
     BOOST_REQUIRE(final_satoshi);
     BOOST_CHECK_EQUAL(*final_satoshi, 1);
 
-    const auto empty{Consensus::GetRecyclePayout(0, 0, 0)};
+    const auto empty{Consensus::GetRecyclePayoutAllowance(0, 0, 0)};
     BOOST_REQUIRE(empty);
     BOOST_CHECK_EQUAL(*empty, 0);
 
-    BOOST_CHECK(!Consensus::GetRecyclePayout(-1, 0, 0));
-    BOOST_CHECK(!Consensus::GetRecyclePayout(0, -1, 0));
-    BOOST_CHECK(!Consensus::GetRecyclePayout(0, MAX_MONEY, 1));
+    BOOST_CHECK(!Consensus::GetRecyclePayoutAllowance(-1, 0, 0));
+    BOOST_CHECK(!Consensus::GetRecyclePayoutAllowance(0, -1, 0));
+    BOOST_CHECK(!Consensus::GetRecyclePayoutAllowance(0, MAX_MONEY, 1));
+}
+
+BOOST_AUTO_TEST_CASE(pool_is_charged_only_for_claimed_recycle_value)
+{
+    constexpr CAmount subsidy{50 * COIN};
+    constexpr CAmount fees{COIN / 4};
+    constexpr CAmount ordinary_reward{subsidy + fees};
+    constexpr CAmount allowance{COIN};
+
+    const auto underclaimed_ordinary{Consensus::GetClaimedRecyclePayout(
+        40 * COIN, ordinary_reward, allowance)};
+    BOOST_REQUIRE(underclaimed_ordinary);
+    BOOST_CHECK_EQUAL(*underclaimed_ordinary, 0);
+
+    const auto ordinary_only{Consensus::GetClaimedRecyclePayout(
+        ordinary_reward, ordinary_reward, allowance)};
+    BOOST_REQUIRE(ordinary_only);
+    BOOST_CHECK_EQUAL(*ordinary_only, 0);
+
+    const auto partial_recycle{Consensus::GetClaimedRecyclePayout(
+        ordinary_reward + 30'000'000, ordinary_reward, allowance)};
+    BOOST_REQUIRE(partial_recycle);
+    BOOST_CHECK_EQUAL(*partial_recycle, 30'000'000);
+
+    const auto full_recycle{Consensus::GetClaimedRecyclePayout(
+        ordinary_reward + allowance, ordinary_reward, allowance)};
+    BOOST_REQUIRE(full_recycle);
+    BOOST_CHECK_EQUAL(*full_recycle, allowance);
+
+    BOOST_CHECK(!Consensus::GetClaimedRecyclePayout(
+        ordinary_reward + allowance + 1, ordinary_reward, allowance));
+    BOOST_CHECK(!Consensus::GetClaimedRecyclePayout(-1, ordinary_reward, allowance));
+    BOOST_CHECK(!Consensus::GetClaimedRecyclePayout(0, -1, allowance));
+    BOOST_CHECK(!Consensus::GetClaimedRecyclePayout(0, ordinary_reward, -1));
+    BOOST_CHECK(!Consensus::GetClaimedRecyclePayout(MAX_MONEY, MAX_MONEY, 1));
 }
 
 BOOST_AUTO_TEST_CASE(expiry_state_connect_disconnect)

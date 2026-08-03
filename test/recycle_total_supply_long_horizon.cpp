@@ -117,7 +117,7 @@ int main()
 
         const CAmount due{expected_expiry.contains(height) ? expected_expiry.at(height) : 0};
         const CAmount available{state.PoolBalance() + due};
-        const auto payout{Consensus::GetRecyclePayout(height, state.PoolBalance(), due)};
+        const auto payout{Consensus::GetRecyclePayoutAllowance(height, state.PoolBalance(), due)};
         assert(payout);
         assert(*payout == std::min(available, Consensus::RECYCLE_PAYOUT_CAP));
 

@@ -2546,16 +2546,11 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
         expired_value += removed.out.nValue;
         blockundo.recycle.expired.push_back({outpoint, std::move(removed)});
     }
-    const auto recycle_payout{Consensus::GetRecyclePayout(pindex->nHeight, blockundo.recycle.pool_balance_before, expired_value)};
-    if (!recycle_payout) {
+    const auto recycle_allowance{Consensus::GetRecyclePayoutAllowance(
+        pindex->nHeight, blockundo.recycle.pool_balance_before, expired_value)};
+    if (!recycle_allowance) {
         return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-recycle-pool", "Recycle Pool accounting failed");
     }
-    blockundo.recycle.payout = *recycle_payout;
-    const auto recycle_update{Consensus::UpdateRecyclePool(blockundo.recycle.pool_balance_before, expired_value, *recycle_payout)};
-    if (!recycle_update) {
-        return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-recycle-pool", "Recycle Pool update failed");
-    }
-    view.SetRecyclePoolBalance(recycle_update->balance_after);
 
     // Precomputed transaction data pointers must not be invalidated
     // until after `control` has run the script checks (potentially
@@ -2657,10 +2652,24 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
              Ticks<SecondsDouble>(m_chainman.time_connect),
              Ticks<MillisecondsDouble>(m_chainman.time_connect) / m_chainman.num_blocks_total);
 
-    CAmount blockReward = nFees + GetBlockSubsidy(pindex->nHeight, params.GetConsensus()) + blockundo.recycle.payout;
-    if ((!MoneyRange(blockReward) || block.vtx[0]->GetValueOut() > blockReward) && state.IsValid()) {
-        state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-cb-amount",
-                      strprintf("coinbase pays too much (actual=%d vs maximum=%d)", block.vtx[0]->GetValueOut(), blockReward));
+    if (state.IsValid()) {
+        const CAmount ordinary_reward{nFees + GetBlockSubsidy(pindex->nHeight, params.GetConsensus())};
+        const CAmount coinbase_value{block.vtx[0]->GetValueOut()};
+        const auto claimed_recycle{Consensus::GetClaimedRecyclePayout(
+            coinbase_value, ordinary_reward, *recycle_allowance)};
+        if (!claimed_recycle) {
+            state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-cb-amount",
+                          strprintf("coinbase pays too much or reward range is invalid (actual=%d)", coinbase_value));
+        } else {
+            blockundo.recycle.payout = *claimed_recycle;
+            const auto recycle_update{Consensus::UpdateRecyclePool(
+                blockundo.recycle.pool_balance_before, expired_value, *claimed_recycle)};
+            if (!recycle_update) {
+                state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-recycle-pool", "Recycle Pool update failed");
+            } else {
+                view.SetRecyclePoolBalance(recycle_update->balance_after);
+            }
+        }
     }
     if (control) {
         auto parallel_result = control->Complete();

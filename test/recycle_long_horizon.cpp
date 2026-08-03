@@ -63,7 +63,7 @@ int main()
 
         const CAmount due{expected_expiry.contains(height) ? expected_expiry.at(height) : 0};
         const CAmount available{state.PoolBalance() + due};
-        const auto payout{Consensus::GetRecyclePayout(height, state.PoolBalance(), due)};
+        const auto payout{Consensus::GetRecyclePayoutAllowance(height, state.PoolBalance(), due)};
         assert(payout);
         assert(*payout == std::min(available, Consensus::RECYCLE_PAYOUT_CAP));
         if (available >= COIN) assert(*payout == COIN);
@@ -121,7 +121,7 @@ int main()
     const COutPoint final_height_outpoint{Txid{}, 0};
     assert(final_height_state.Queue(final_height_outpoint, final_height_coin));
     const int final_height{std::numeric_limits<int>::max()};
-    const auto final_height_payout{Consensus::GetRecyclePayout(final_height, 0, 2 * COIN)};
+    const auto final_height_payout{Consensus::GetRecyclePayoutAllowance(final_height, 0, 2 * COIN)};
     assert(final_height_payout && *final_height_payout == COIN);
     const auto final_height_undo{final_height_state.ExpireAndPay(final_height, *final_height_payout)};
     assert(final_height_undo && final_height_state.PoolBalance() == COIN);
