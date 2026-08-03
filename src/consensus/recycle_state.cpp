@@ -15,13 +15,15 @@ size_t RecycleState::BucketSize(int expiry_height) const
 
 bool RecycleState::Queue(const COutPoint& outpoint, const Coin& coin)
 {
-    if (coin.IsSpent() || coin.nHeight > static_cast<uint32_t>(INT_MAX - UTXO_EXPIRY_AGE)) return false;
+    if (coin.IsSpent() || !MoneyRange(coin.out.nValue) ||
+        coin.nHeight > static_cast<uint32_t>(INT_MAX - UTXO_EXPIRY_AGE)) return false;
     return m_expiry_buckets[UTXOExpiryHeight(coin.nHeight)].emplace(outpoint, coin).second;
 }
 
 bool RecycleState::Unqueue(const COutPoint& outpoint, const Coin& coin)
 {
-    if (coin.IsSpent() || coin.nHeight > static_cast<uint32_t>(INT_MAX - UTXO_EXPIRY_AGE)) return false;
+    if (coin.IsSpent() || !MoneyRange(coin.out.nValue) ||
+        coin.nHeight > static_cast<uint32_t>(INT_MAX - UTXO_EXPIRY_AGE)) return false;
     const int height{UTXOExpiryHeight(coin.nHeight)};
     const auto bucket_it{m_expiry_buckets.find(height)};
     if (bucket_it == m_expiry_buckets.end()) return false;
@@ -59,14 +61,21 @@ std::optional<RecycleBlockUndo> RecycleState::ExpireAndPay(int height, CAmount p
 
 bool RecycleState::Undo(int height, const RecycleBlockUndo& undo)
 {
-    if (height < 0 || !MoneyRange(undo.pool_balance_before) || undo.payout < 0) return false;
+    if (height < 0 || !MoneyRange(undo.pool_balance_before) || !MoneyRange(undo.payout)) return false;
     if (m_expiry_buckets.contains(height)) return false;
 
     std::map<COutPoint, Coin> restored;
+    CAmount expired_value{0};
     for (const auto& entry : undo.expired) {
-        if (entry.coin.IsSpent() || UTXOExpiryHeight(entry.coin.nHeight) != height) return false;
+        if (entry.coin.IsSpent() || !MoneyRange(entry.coin.out.nValue) ||
+            entry.coin.nHeight > static_cast<uint32_t>(INT_MAX - UTXO_EXPIRY_AGE) ||
+            UTXOExpiryHeight(entry.coin.nHeight) != height ||
+            entry.coin.out.nValue > MAX_MONEY - expired_value) return false;
+        expired_value += entry.coin.out.nValue;
         if (!restored.emplace(entry.outpoint, entry.coin).second) return false;
     }
+    const auto expected{UpdateRecyclePool(undo.pool_balance_before, expired_value, undo.payout)};
+    if (!expected || expected->balance_after != m_pool_balance) return false;
     if (!restored.empty()) m_expiry_buckets.emplace(height, std::move(restored));
     m_pool_balance = undo.pool_balance_before;
     return true;

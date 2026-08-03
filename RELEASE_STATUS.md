@@ -34,6 +34,15 @@ Date: 2026-08-03
   `12.5 -> 0 -> 12.5` and the original tip was restored.
 - Full node restart persistence test: height 102, best-block hash, and the
   receiver's 12.5 RST balance were preserved.
+- Standalone Recycle Pool property stress: 1,000,000 deterministic random
+  valid transitions preserved exact accounting under both optimized and UBSan
+  builds. Invalid, overflow-adjacent, era-boundary, and satoshi-truncation
+  cases were also checked.
+- Expiry/reorg state stress: 10,000 queued UTXOs, 5,000 pre-expiry spends,
+  bulk expiry, payout, and exact Undo restoration passed under UBSan.
+- Malformed Undo cases now reject out-of-range payout, invalid Coin value,
+  overflowing creation height, duplicate entries, and inconsistent prior Pool
+  balance without mutating live state.
 
 ## Known test debt
 
@@ -46,6 +55,9 @@ Date: 2026-08-03
   long reorg simulation, and expiry-height-scale test have not yet been
   completed. A basic two-node synchronization and transfer scenario has now
   passed, but broader network partition and competing-chain scenarios remain.
+- AddressSanitizer/LeakSanitizer could not run in the current restricted
+  process environment; focused UndefinedBehaviorSanitizer runs passed. This is
+  not a substitute for the pending full sanitizer CI jobs.
 - Public DNS seeds, signed reproducible releases, long-running public testnet,
   and independent security review require external infrastructure or reviewers.
 
