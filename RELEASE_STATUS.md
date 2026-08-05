@@ -142,8 +142,20 @@ remaining Bitcoin-fixture compatibility failures. This follow-up repair:
 - updates executable-name diagnostics and deterministic missing-signer setup.
 
 Mainnet ASERT, CSV activation, expiry, Recycle Pool, genesis, message magic,
-ports, and payment-address namespaces are unchanged. A complete target-host
-CTest and functional-suite rerun is required for the exact follow-up commit.
+ports, and payment-address namespaces are unchanged. On the target Ubuntu
+host, commit `60e9e46` then passed all 370 registered CTest targets. Its full
+functional suite passed every executed test except `feature_signet.py`, which
+timed out while waiting for a freshly mined OP_TRUE signet block to be relayed
+from one node to its peer. The peer remained on the ReSatoshi signet genesis;
+no consensus rejection was reported.
+
+The next repair removes that relay assumption from the test. It submits the
+fresh ReSatoshi block directly to a node with the same OP_TRUE challenge and
+requires acceptance, then submits the identical block to the default and
+2-of-2 signets and requires `bad-signet-blksig`. This tests signet challenge
+separation directly and does not change production or consensus code. A
+complete target-host CTest and functional-suite rerun is required for the
+exact follow-up commit.
 
 ## Remaining release debt
 

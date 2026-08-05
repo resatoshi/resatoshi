@@ -84,9 +84,16 @@ class SignetBasicTest(BitcoinTestFramework):
         # Bitcoin Core's pre-generated blocks commit to Bitcoin's signet
         # genesis. ReSatoshi has its own signet genesis, so exercise the same
         # challenge separation with a freshly generated ReSatoshi block.
+        # Disconnect after the successful handshake so block submission below
+        # cannot race with a P2P announcement.
+        self.disconnect_nodes(0, 1)
         self.generate(self.nodes[0], 1, sync_fun=self.no_op)
-        self.sync_blocks(self.nodes[0:2])
         op_true_block = self.nodes[0].getblock(self.nodes[0].getbestblockhash(), 0)
+
+        # Submit explicitly instead of relying on P2P announcement. A node with
+        # only a fresh signet genesis may still be in initial block download,
+        # where locally generated blocks are not guaranteed to be announced.
+        assert_equal(self.nodes[1].submitblock(op_true_block), None)
         assert_equal(self.nodes[1].getblockcount(), 1)
 
         self.log.info("block valid for OP_TRUE is rejected by nontrivial signets")
