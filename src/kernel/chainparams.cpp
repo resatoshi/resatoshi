@@ -559,10 +559,16 @@ public:
 
         ApplyDeploymentOptions(opts.dep_opts);
 
-        genesis = CreateGenesisBlock(1785596603, 150759, 0x1f00ffff, 1, 0 * COIN);
+        // Keep the private regression-test chain on Bitcoin Core's historical
+        // test fixture. Public ReSatoshi networks use their own genesis blocks
+        // above, while regtest must remain compatible with upstream unit-test
+        // clocks, block hashes, and assumeutxo snapshots.
+        const char* regtest_genesis_msg = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
+        const CScript regtest_genesis_script = CScript() << "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"_hex << OP_CHECKSIG;
+        genesis = CreateGenesisBlock(regtest_genesis_msg, regtest_genesis_script, 1296688602, 2, 0x207fffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256{"00003238910a7bd34d9175b5b9929aeb491641d722b5c1c1eaa8aafafc05c55a"});
-        assert(genesis.hashMerkleRoot == uint256{"b19621383a511e65cd4ae8b7d6257c5abfe0e967e389f8728901c51e0e025b48"});
+        assert(consensus.hashGenesisBlock == uint256{"0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"});
+        assert(genesis.hashMerkleRoot == uint256{"4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"});
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();
