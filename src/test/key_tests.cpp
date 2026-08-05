@@ -11,6 +11,7 @@
 #include <secp256k1_extrakeys.h>
 #include <test/util/common.h>
 #include <test/util/random.h>
+#include <test/util/resatoshi.h>
 #include <test/util/setup_common.h>
 #include <uint256.h>
 #include <util/strencodings.h>
@@ -76,10 +77,10 @@ BOOST_AUTO_TEST_CASE(key_test1)
     BOOST_CHECK(!key2C.VerifyPubKey(pubkey2));
     BOOST_CHECK(key2C.VerifyPubKey(pubkey2C));
 
-    BOOST_CHECK(DecodeDestination(addr1)  == CTxDestination(PKHash(pubkey1)));
-    BOOST_CHECK(DecodeDestination(addr2)  == CTxDestination(PKHash(pubkey2)));
-    BOOST_CHECK(DecodeDestination(addr1C) == CTxDestination(PKHash(pubkey1C)));
-    BOOST_CHECK(DecodeDestination(addr2C) == CTxDestination(PKHash(pubkey2C)));
+    BOOST_CHECK(DecodeDestination(ReencodeBitcoinMainnetAddressForTest(addr1))  == CTxDestination(PKHash(pubkey1)));
+    BOOST_CHECK(DecodeDestination(ReencodeBitcoinMainnetAddressForTest(addr2))  == CTxDestination(PKHash(pubkey2)));
+    BOOST_CHECK(DecodeDestination(ReencodeBitcoinMainnetAddressForTest(addr1C)) == CTxDestination(PKHash(pubkey1C)));
+    BOOST_CHECK(DecodeDestination(ReencodeBitcoinMainnetAddressForTest(addr2C)) == CTxDestination(PKHash(pubkey2C)));
 
     for (int n=0; n<16; n++)
     {

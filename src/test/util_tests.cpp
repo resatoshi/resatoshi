@@ -11,6 +11,7 @@
 #include <sync.h>
 #include <test/util/common.h>
 #include <test/util/random.h>
+#include <test/util/resatoshi.h>
 #include <test/util/setup_common.h>
 #include <test/util/time.h>
 #include <uint256.h>
@@ -1551,42 +1552,42 @@ BOOST_AUTO_TEST_CASE(message_verify)
 
     BOOST_CHECK_EQUAL(
         MessageVerify(
-            "3B5fQsEXEaV8v6U3ejYc8XaKXAkyQj2MjV",
+            ReencodeBitcoinMainnetAddressForTest("3B5fQsEXEaV8v6U3ejYc8XaKXAkyQj2MjV"),
             "signature should be irrelevant",
             "message too"),
         MessageVerificationResult::ERR_ADDRESS_NO_KEY);
 
     BOOST_CHECK_EQUAL(
         MessageVerify(
-            "1KqbBpLy5FARmTPD4VZnDDpYjkUvkr82Pm",
+            ReencodeBitcoinMainnetAddressForTest("1KqbBpLy5FARmTPD4VZnDDpYjkUvkr82Pm"),
             "invalid signature, not in base64 encoding",
             "message should be irrelevant"),
         MessageVerificationResult::ERR_MALFORMED_SIGNATURE);
 
     BOOST_CHECK_EQUAL(
         MessageVerify(
-            "1KqbBpLy5FARmTPD4VZnDDpYjkUvkr82Pm",
+            ReencodeBitcoinMainnetAddressForTest("1KqbBpLy5FARmTPD4VZnDDpYjkUvkr82Pm"),
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
             "message should be irrelevant"),
         MessageVerificationResult::ERR_PUBKEY_NOT_RECOVERED);
 
     BOOST_CHECK_EQUAL(
         MessageVerify(
-            "15CRxFdyRpGZLW9w8HnHvVduizdL5jKNbs",
+            ReencodeBitcoinMainnetAddressForTest("15CRxFdyRpGZLW9w8HnHvVduizdL5jKNbs"),
             "IPojfrX2dfPnH26UegfbGQQLrdK844DlHq5157/P6h57WyuS/Qsl+h/WSVGDF4MUi4rWSswW38oimDYfNNUBUOk=",
             "I never signed this"),
         MessageVerificationResult::ERR_NOT_SIGNED);
 
     BOOST_CHECK_EQUAL(
         MessageVerify(
-            "15CRxFdyRpGZLW9w8HnHvVduizdL5jKNbs",
+            ReencodeBitcoinMainnetAddressForTest("15CRxFdyRpGZLW9w8HnHvVduizdL5jKNbs"),
             "IPojfrX2dfPnH26UegfbGQQLrdK844DlHq5157/P6h57WyuS/Qsl+h/WSVGDF4MUi4rWSswW38oimDYfNNUBUOk=",
             "Trust no one"),
         MessageVerificationResult::OK);
 
     BOOST_CHECK_EQUAL(
         MessageVerify(
-            "11canuhp9X2NocwCq7xNrQYTmUgZAnLK3",
+            ReencodeBitcoinMainnetAddressForTest("11canuhp9X2NocwCq7xNrQYTmUgZAnLK3"),
             "IIcaIENoYW5jZWxsb3Igb24gYnJpbmsgb2Ygc2Vjb25kIGJhaWxvdXQgZm9yIGJhbmtzIAaHRtbCeDZINyavx14=",
             "Trust me"),
         MessageVerificationResult::OK);

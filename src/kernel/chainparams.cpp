@@ -167,14 +167,14 @@ public:
         // service bits we want, but we should get them updated to support all service bits wanted by any
         // release ASAP to avoid it where possible.
         vSeeds.clear();
-        // ReSatoshi-specific legacy and extended-key namespaces. Never reuse
-        // Bitcoin mainnet encodings: a visually valid address must still be
-        // rejected by the other network.
+        // ReSatoshi-specific spendable-address namespaces. Wallet key
+        // containers keep the standard WIF and BIP32 xpub/xprv encodings;
+        // unlike an address, they are not destinations for coin transfers.
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,60);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,122);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,188);
-        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x52, 0x53, 0x54};
-        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x52, 0x53, 0x55};
+        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,128);
+        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
+        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
 
         bech32_hrp = "rs";
 

@@ -21,6 +21,9 @@ and this checkpoint is not a value-bearing mainnet release.
   expired outputs while preserving wallet history.
 - ReSatoshi-specific executable names, data directory, configuration file,
   address namespaces, message bytes, and ports.
+- Spendable addresses remain isolated from Bitcoin. Wallet key containers use
+  standard WIF and BIP32 `xpub`/`xprv` encodings so upstream key and descriptor
+  tooling remains compatible; these strings are not payment destinations.
 - An isolated public alpha selected with `-testnet`, using Bech32 prefix `trs`,
   P2P port `49595`, RPC port `49594`, and no inherited Bitcoin DNS seeds or
   chain assumptions.
@@ -90,15 +93,42 @@ The reconstructed tree passed the checks available in the recovery workspace:
 
 That workspace did not contain CMake, libevent, SQLite, or the full supported
 Boost development package. Therefore the **current reconstructed commit must
-repeat the 375-test CTest run on the target Ubuntu machine before P2P port
+repeat the complete CTest run on the target Ubuntu machine before P2P port
 49595 is opened**. The earlier 375/375 results are retained above as the
 verification record of the completed candidate, not represented as a fresh
 run of the reconstructed archive.
 
+## Target Ubuntu rerun and compatibility repair
+
+The reconstructed `c15aa61` archive was configured on the target Ubuntu host
+with GUI, IPC, ZMQ, and benchmarks disabled. This configuration registered 370
+tests. The first complete run passed 355 and failed 15. The failures were not
+in the Recycle Pool tests; they were upstream fixtures that still assumed
+Bitcoin mainnet address prefixes, network magic, port 8333, BIP32 containers,
+or historical chain parameters.
+
+This repair candidate:
+
+- keeps ReSatoshi payment-address prefixes, `rs` Bech32 HRP, message magic,
+  ports, genesis blocks, ASERT, expiry, and Recycle Pool consensus unchanged;
+- restores standard WIF and BIP32 wallet-key containers;
+- re-encodes Bitcoin address vectors to the selected ReSatoshi network while
+  preserving their script payloads;
+- runs historical mining fixtures on the restored private regtest chain;
+- makes fixed BIP324 vectors explicitly use Bitcoin's vector magic while
+  production traffic continues to use ReSatoshi's selected-network magic;
+- removes hard-coded port 8333 expectations; and
+- handles the zero-minimum-chain-work edge case in the IBD unit test.
+
+The changed production files and the new address-vector helper passed
+syntax-only compilation in the recovery workspace. All available source
+linters passed. Full CTest verification of this repair candidate remains
+pending on the target Ubuntu host.
+
 ## Remaining release debt
 
-- Repeat the normal full build/CTest and ASan+UBSan CTest on the recovered
-  commit; run LSan on an unrestricted Linux host.
+- Repeat the normal 370-test build/CTest for this repair candidate, then repeat
+  ASan+UBSan CTest; run LSan on an unrestricted Linux host.
 - Test GUI, IPC, ZMQ, fuzz targets, and migration from previous alpha data.
 - Run multi-machine partition, competing-chain, long-reorganization, and soak
   tests.
@@ -109,6 +139,6 @@ run of the reconstructed archive.
 ## Readiness assessment
 
 The source is a candidate for a resettable, valueless public alpha. It is not a
-safe value-bearing mainnet release. Complete the target-host 375-test run and
-confirm the source commit and archive hash before starting the first public
-node.
+safe value-bearing mainnet release. Complete the target-host 370-test run for
+this exact repair commit and confirm the archive hash before starting the first
+public node.
