@@ -34,7 +34,7 @@ WALLET_NOT_LOADED = 'Requested wallet does not exist or is not loaded'
 WALLET_NOT_SPECIFIED = (
     "Multiple wallets are loaded. Please select which wallet to use by requesting the RPC "
     "through the /wallet/<walletname> URI path. Or for the CLI, specify the \"-rpcwallet=<walletname>\" "
-    "option before the command (run \"bitcoin-cli -h\" for help or \"bitcoin-cli listwallets\" to see "
+    "option before the command (run \"resatoshi-cli -h\" for help or \"resatoshi-cli listwallets\" to see "
     "which wallets are currently loaded)."
 )
 
@@ -461,7 +461,7 @@ class TestBitcoinCli(BitcoinTestFramework):
             # node.cli.options includes -rpcconnect which can't be combined with -ipcconnect, so pass just -datadir directly to keep bitcoin-cli on the test's resatoshi.conf
             args = self.nodes[0].binaries.valgrind_cmd + [self.nodes[0].binaries.paths.bitcoincli, f"-datadir={self.nodes[0].datadir_path}", "-ipcconnect=unix", "-getinfo"]
             result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            assert_equal(result.stdout, "error: bitcoin-cli was not built with IPC support\n")
+            assert_equal(result.stdout, "error: resatoshi-cli was not built with IPC support\n")
             assert_equal(result.stderr, None)
             assert_equal(result.returncode, 1)
 

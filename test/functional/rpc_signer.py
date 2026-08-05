@@ -30,7 +30,7 @@ class RPCSignerTest(BitcoinTestFramework):
             [],
             [f"-signer={self.mock_signer_path()}", '-keypool=10'],
             [f"-signer={self.mock_signer_path()}", '-keypool=10'],
-            ["-signer=fake.py"],
+            [f"-signer={os.path.join(self.options.tmpdir, 'missing-signer')}"],
         ]
 
     def skip_test_if_missing_module(self):

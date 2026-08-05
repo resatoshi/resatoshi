@@ -24,7 +24,7 @@ class ToolBitcoinTest(BitcoinTestFramework):
     def skip_test_if_missing_module(self):
         # Skip test on windows because currently when `bitcoin node -version` is
         # run on windows, python doesn't capture output from the child
-        # `bitcoind` and `bitcoin-node` process started with _wexecvp, and
+        # `resatoshid` and `resatoshi-node` processes started with _wexecvp, and
         # stdout/stderr are always empty. See
         # https://github.com/bitcoin/bitcoin/pull/33229#issuecomment-3265524908
         if platform.system() == "Windows":
@@ -63,28 +63,28 @@ class ToolBitcoinTest(BitcoinTestFramework):
     def run_test(self):
         node = self.nodes[0]
 
-        self.log.info("Ensure bitcoin node command invokes bitcoind by default")
-        self.test_args([], [], expect_exe="bitcoind")
+        self.log.info("Ensure resatoshi node command invokes resatoshid by default")
+        self.test_args([], [], expect_exe="resatoshid")
 
-        self.log.info("Ensure bitcoin -M invokes bitcoind")
-        self.test_args(["-M"], [], expect_exe="bitcoind")
+        self.log.info("Ensure resatoshi -M invokes resatoshid")
+        self.test_args(["-M"], [], expect_exe="resatoshid")
 
         self.log.info("Ensure bitcoin -M does not accept -ipcbind")
         self.test_args(["-M"], ["-ipcbind=unix"], expect_error='Error: Error parsing command line arguments: Invalid parameter -ipcbind=unix')
 
         if self.is_ipc_compiled():
-            self.log.info("Ensure bitcoin -m invokes bitcoin-node")
-            self.test_args(["-m"], [], expect_exe="bitcoin-node")
+            self.log.info("Ensure resatoshi -m invokes resatoshi-node")
+            self.test_args(["-m"], [], expect_exe="resatoshi-node")
 
-            self.log.info("Ensure bitcoin -m does accept -ipcbind")
-            self.test_args(["-m"], ["-ipcbind=unix"], expect_exe="bitcoin-node")
+            self.log.info("Ensure resatoshi -m accepts -ipcbind")
+            self.test_args(["-m"], ["-ipcbind=unix"], expect_exe="resatoshi-node")
 
-            self.log.info("Ensure bitcoin accepts -ipcbind by default")
-            self.test_args([], ["-ipcbind=unix"], expect_exe="bitcoin-node")
+            self.log.info("Ensure resatoshi accepts -ipcbind by default")
+            self.test_args([], ["-ipcbind=unix"], expect_exe="resatoshi-node")
 
-            self.log.info("Ensure bitcoin recognizes -ipcbind in config file")
+            self.log.info("Ensure resatoshi recognizes -ipcbind in config file")
             append_config(node.datadir_path, ["ipcbind=unix"])
-            self.test_args([], [], expect_exe="bitcoin-node")
+            self.test_args([], [], expect_exe="resatoshi-node")
 
 
 def get_node_output(node):

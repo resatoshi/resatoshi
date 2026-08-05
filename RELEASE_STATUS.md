@@ -122,21 +122,32 @@ This repair candidate:
 
 The changed production files and the new address-vector helper passed
 syntax-only compilation in the recovery workspace. All available source
-linters passed. Full CTest verification of this repair candidate remains
-pending on the target Ubuntu host.
+linters passed. The follow-up candidate at commit `ea91d71` passed all 370
+CTest targets on the target Ubuntu host (one configuration-dependent scripted
+asset test was skipped, not failed).
 
-The first target-host rerun of this candidate passed 368 of 370 tests. The two
-remaining failures were fixture-only mismatches: two inferred descriptors
-still expected Bitcoin payment addresses, and the historical miner fixture
-ran with CSV active even though the test intentionally exercises its
-pre-activation behavior. The follow-up repair updates those two expected
-addresses and delays CSV only inside that private miner-test regtest fixture;
-public ReSatoshi CSV activation and all production consensus parameters remain
-unchanged. A complete target-host rerun is still required.
+The target-host functional suite then ran to completion and exposed nine
+remaining Bitcoin-fixture compatibility failures. This follow-up repair:
+
+- teaches the test framework the installed `resatoshi*` executable names;
+- recognizes ReSatoshi mainnet and testnet snapshot magic;
+- regenerates signet blocks from the ReSatoshi signet genesis instead of
+  importing blocks from Bitcoin signet;
+- removes Bitcoin signet chainwork, assumevalid, snapshot, and seed metadata
+  that cannot describe the ReSatoshi signet chain;
+- verifies ReSatoshi mainnet ASERT directly with freshly solved blocks instead
+  of replaying Bitcoin's historical retarget fixture;
+- re-encodes main-chain address and transaction-tool fixtures to `R`/`r`/`rs`
+  without changing their script payloads; and
+- updates executable-name diagnostics and deterministic missing-signer setup.
+
+Mainnet ASERT, CSV activation, expiry, Recycle Pool, genesis, message magic,
+ports, and payment-address namespaces are unchanged. A complete target-host
+CTest and functional-suite rerun is required for the exact follow-up commit.
 
 ## Remaining release debt
 
-- Repeat the normal 370-test build/CTest for this repair candidate, then repeat
+- Repeat the normal 370-test build/CTest for the exact follow-up commit, then repeat
   ASan+UBSan CTest; run LSan on an unrestricted Linux host.
 - Test GUI, IPC, ZMQ, fuzz targets, and migration from previous alpha data.
 - Run multi-machine partition, competing-chain, long-reorganization, and soak
@@ -148,6 +159,6 @@ unchanged. A complete target-host rerun is still required.
 ## Readiness assessment
 
 The source is a candidate for a resettable, valueless public alpha. It is not a
-safe value-bearing mainnet release. Complete the target-host 370-test run for
-this exact repair commit and confirm the archive hash before starting the first
-public node.
+safe value-bearing mainnet release. Complete the target-host CTest and
+functional-suite runs for this exact repair commit and confirm the archive hash
+before starting the first public node.
