@@ -125,6 +125,15 @@ syntax-only compilation in the recovery workspace. All available source
 linters passed. Full CTest verification of this repair candidate remains
 pending on the target Ubuntu host.
 
+The first target-host rerun of this candidate passed 368 of 370 tests. The two
+remaining failures were fixture-only mismatches: two inferred descriptors
+still expected Bitcoin payment addresses, and the historical miner fixture
+ran with CSV active even though the test intentionally exercises its
+pre-activation behavior. The follow-up repair updates those two expected
+addresses and delays CSV only inside that private miner-test regtest fixture;
+public ReSatoshi CSV activation and all production consensus parameters remain
+unchanged. A complete target-host rerun is still required.
+
 ## Remaining release debt
 
 - Repeat the normal 370-test build/CTest for this repair candidate, then repeat

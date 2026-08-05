@@ -58,7 +58,13 @@ using node::BlockCreateOptions;
 
 namespace miner_tests {
 struct MinerTestingSetup : public TestingSetup {
-    MinerTestingSetup() : TestingSetup{ChainType::REGTEST} {}
+    // This upstream fixture intentionally puts sequence-locked transactions
+    // into the mempool before CSV activates, then tests both sides of their
+    // lock-time boundary. ReSatoshi activates CSV from the first public block,
+    // so keep that production rule unchanged and delay CSV only on this private
+    // regtest fixture until after the test's synthetic 110-block chain.
+    MinerTestingSetup()
+        : TestingSetup{ChainType::REGTEST, {.extra_args = {"-testactivationheight=csv@999999"}}} {}
 
     void TestPackageSelection(const CScript& scriptPubKey, const std::vector<CTransactionRef>& txFirst) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
     void TestBasicMining(const CScript& scriptPubKey, const std::vector<CTransactionRef>& txFirst, int baseheight) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
