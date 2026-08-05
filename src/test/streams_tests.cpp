@@ -88,6 +88,26 @@ BOOST_AUTO_TEST_CASE(obfuscation_empty)
     BOOST_CHECK(non_null_obf);
 }
 
+BOOST_AUTO_TEST_CASE(autofile_empty_span)
+{
+    const fs::path path{m_args.GetDataDirBase() / "autofile_empty_span.bin"};
+    const std::array obfuscations{
+        Obfuscation{},
+        Obfuscation{"ff00ff00ff00ff00"_hex},
+    };
+
+    for (const auto& obfuscation : obfuscations) {
+        AutoFile file{fsbridge::fopen(path, "w+b"), obfuscation};
+        const std::span<const std::byte> empty_src{};
+        std::span<std::byte> empty_dst{};
+
+        file.write(empty_src);
+        file.read(empty_dst);
+        BOOST_CHECK_EQUAL(file.tell(), 0);
+        BOOST_CHECK_EQUAL(file.size(), 0);
+    }
+}
+
 BOOST_AUTO_TEST_CASE(streams_scoped_data_stream_usage)
 {
     DataStream stream{};

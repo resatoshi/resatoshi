@@ -1,120 +1,114 @@
-# ReSatoshi development status
+# ReSatoshi public alpha status
 
-Date: 2026-08-03
+Date: 2026-08-05
 
-## Completed in this checkpoint
+## Candidate scope
 
-- Correct zero-value genesis transaction serialization, independently mined
-  genesis hashes, and source-to-generator cross-check.
-- Consensus UTXO expiry boundary at 5,256,000 blocks.
-- Expiry-height chainstate buckets, persistent Recycle Pool balance, atomic DB
-  writes, full block undo, and disconnect restoration.
-- Miner construction and consensus validation of Recycle Pool payouts.
-- Fixed Recycle Pool payout cap of 1 RST per block with no halving schedule.
-- The Pool is debited only for Recycle value actually claimed above the
-  ordinary subsidy and transaction fees; an underclaim leaves the remainder
-  available to later blocks.
-- Per-block integer ASERT using a two-day half-life and the genesis anchor.
-- ReSatoshi mainnet message bytes, port, Bech32 HRP, Base58 namespaces, and
-  removal of inherited Bitcoin mainnet seeds/assumptions.
-- ReSatoshi executable names, default data directory, configuration file, and
-  PID file are isolated from Bitcoin Core (`resatoshid`, `resatoshi-cli`,
-  `.resatoshi`, `resatoshi.conf`, and `resatoshid.pid`).
-- The `-testnet` chain is now the ReSatoshi public alpha network with separate
-  message bytes, P2P/RPC ports, address encodings, data subdirectory, and no
-  inherited Bitcoin seeds or chain assumptions.
-- Wallet balance, address-balance, and coin-selection paths exclude expired
-  outputs while retaining the historical wallet transaction.
+This source is for a resettable public alpha network only. Alpha RST has no
+monetary value, the chain may be reset after a defect or incompatible change,
+and this checkpoint is not a value-bearing mainnet release.
 
-## Verification performed
+## Included consensus and identity work
 
-- An earlier pre-claimed-only checkpoint completed a full node and unit-test
-  executable build. That result does not cover the current packaging changes.
-- Genesis generator cross-check: passed.
-- 35 focused ASERT, Recycle Pool, UTXO cache, and DB tests: passed.
-- Live regtest block connect/invalidate/reconsider: `3 -> 2 -> 3`, passed.
-- Wallet-enabled `test_bitcoin` compile and link (503 build steps): passed.
-- Wallet expiry visibility boundary test and the 35 focused consensus tests:
-  passed after wallet integration.
-- Live two-node regtest synchronization: both peers reached height 102 with
-  identical best-block hashes.
-- Live wallet transfer between nodes: 12.5 RST relayed, mined, and credited
-  with one confirmation.
-- Live disconnect/reconsider wallet test: receiver balance changed
-  `12.5 -> 0 -> 12.5` and the original tip was restored.
-- Full node restart persistence test: height 102, best-block hash, and the
-  receiver's 12.5 RST balance were preserved.
-- Standalone Recycle Pool property stress: 1,000,000 deterministic random
-  valid transitions preserved exact accounting under both optimized and UBSan
-  builds. Invalid, overflow-adjacent, era-boundary, and satoshi-truncation
-  cases were also checked.
-- Claimed-only payout stress: 1,000,000 deterministic coinbase underclaim
-  combinations verified that only value above ordinary subsidy and fees leaves
-  the Pool, while excess claims and invalid reward ranges are rejected.
-- Claimed-only 600-year simulation: full, partial, and zero Recycle claims were
-  mixed across 31,536,001 blocks. Every expiry-block Undo/reapply restored the
-  exact prior Pool state, and `expired = claimed + Pool` held throughout.
-- Expiry/reorg state stress: 10,000 queued UTXOs, 5,000 pre-expiry spends,
-  bulk expiry, payout, and exact Undo restoration passed under UBSan.
-- Malformed Undo cases now reject out-of-range payout, invalid Coin value,
-  overflowing creation height, duplicate entries, and inconsistent prior Pool
-  balance without mutating live state.
-- Recurring-expiry long-horizon simulation: one 600,000 RST expiry batch every
-  ten years, from the 100-year boundary through year 600 (31,536,001 blocks).
-  All 51 expiry events continued to add to the Pool while every funded block
-  paid exactly 1 RST. Exact accounting, event-block Undo/reapply, optimized and
-  UBSan runs, and the final representable block-height boundary all passed.
-- Whole-supply 600-year simulation: ordinary block subsidy is the sole source
-  of new RST, and every one of 50 recurring 600,000 RST expiry batches is
-  funded by existing live UTXOs. After every one of 31,536,001 blocks, issued
-  subsidy exactly equalled liquid UTXOs plus queued live UTXOs plus the Recycle
-  Pool. The same identity passed expiry-block Undo/reapply and optimized and
-  UBSan runs; the checker also rejected deliberate one-satoshi inflation and
-  one-satoshi loss. At year 600 the exact identity was
+- Zero-value genesis transaction with the message `Flow like water`.
+- UTXO expiry at exactly 5,256,000 blocks.
+- Expiry-height chainstate buckets, persistent Recycle Pool accounting, atomic
+  database updates, block Undo data, and disconnect restoration.
+- Recycle payouts capped at 1 RST per block. The Pool is debited only for value
+  actually claimed above the ordinary subsidy and transaction fees.
+- Per-block integer ASERT with a two-day half-life and a genesis anchor.
+- Wallet balance, address-balance, and coin-selection paths that exclude
+  expired outputs while preserving wallet history.
+- ReSatoshi-specific executable names, data directory, configuration file,
+  address namespaces, message bytes, and ports.
+- An isolated public alpha selected with `-testnet`, using Bech32 prefix `trs`,
+  P2P port `49595`, RPC port `49594`, and no inherited Bitcoin DNS seeds or
+  chain assumptions.
+- A private `regtest` chain kept on Bitcoin Core's historical fixture so the
+  upstream unit-test clocks, hashes, and assumeutxo snapshots remain valid.
+- Empty `AutoFile` reads and writes return before a zero-length span can pass a
+  null data pointer to `fread` or `fwrite`; the regression test covers both
+  unobfuscated and obfuscated files.
+
+## Verification record from the completed candidate
+
+Before the final archive was lost, the dependency-complete candidate recorded:
+
+- Generic build and full CTest: **375/375 passed**.
+- ASan+UBSan build and full CTest after the `AutoFile` repair:
+  **375/375 passed**, with no AddressSanitizer or UndefinedBehaviorSanitizer
+  diagnostics.
+- The first sanitizer pass found one real defect in `net_tests`: an empty
+  captured message reached `AutoFile::write` as a zero-length span. The repair
+  and the dedicated `autofile_empty_span` regression test then passed in both
+  the normal and sanitizer builds.
+- Twelve focused sanitizer groups passed, covering Recycle stress, 600-year
+  supply and Undo behavior, address/WIF/extended-key encodings, descriptors,
+  BIP32, BIP324, ASERT/PoW, and network separation.
+- All 497 object files and 15 static libraries in each of the normal and
+  sanitizer build trees passed format and nonzero-size checks.
+- Five source linters, whitespace checks, include checks, and circular
+  dependency checks passed.
+
+LeakSanitizer was the only sanitizer component not completed in that sandbox.
+It could not inspect `/proc/<pid>/task` during process shutdown, so leak
+detection was disabled while AddressSanitizer and UndefinedBehaviorSanitizer
+remained active. LSan still requires an ordinary Linux host or CI runner.
+
+## Consensus stress and long-horizon results
+
+- One million deterministic Recycle Pool transitions conserved exact
+  accounting in optimized and UBSan builds.
+- One million deterministic coinbase-underclaim combinations verified that
+  only value above ordinary subsidy and fees leaves the Pool.
+- A 10,000-UTXO expiry/reorg stress test covered 5,000 pre-expiry spends, bulk
+  expiry, malformed Undo rejection, and exact restoration.
+- The recurring-expiry simulation processed 31,536,001 blocks through year 600
+  and ended with `30,600,000 RST` expired, `26,280,001 RST` paid, and
+  `4,319,999 RST` in the Pool.
+- The whole-supply simulation maintained
+  `issued subsidy = liquid UTXOs + queued UTXOs + Recycle Pool` after every
+  block and rejected deliberate one-satoshi inflation and loss. At year 600:
   `20,999,949.97690000 = 16,754,350.97690000 + 0 + 4,245,599.00000000 RST`.
-- Current alpha packaging verification: CMake configure/generate passed,
-  generated link/install rules name the programs `resatoshid` and
-  `resatoshi-cli`, changed command-line sources passed syntax-only compilation,
-  and the functional Python files passed bytecode compilation.
-- Current partial Generic build compiled the consensus, cryptography, LevelDB,
-  common argument, alpha chain-parameter, and most CLI modules. The full-node
-  aggregate stopped at 34% and the CLI target at 88% only when the unavailable
-  Boost headers were first included.
-- After the packaging changes, the optimized 1,000,000-transition Pool test,
-  10,000-UTXO expiry/Undo stress test, 600-year recurring-expiry test,
-  600-year whole-supply test, and 600-year malicious-underclaim test all passed.
-  Pool, expiry-state, and underclaim tests also passed UndefinedBehaviorSanitizer.
+- The adversarial-underclaim simulation mixed full, partial, and zero Recycle
+  claims through year 600 while preserving exact Pool accounting and Undo.
 
-## Known test debt
+## Archive reconstruction checks
 
-- This workspace did not provide CMake or Boost headers, so the full node and
-  `test_bitcoin` could not be rebuilt after the claimed-only payout change.
-  The dependency-free consensus harnesses compiled and passed in optimized and
-  UndefinedBehaviorSanitizer builds, but a dependency-complete CI rebuild is
-  still required.
-- The inherited `miner_tests/CreateNewBlock_validity` fixture uses Bitcoin's
-  hard-coded timestamp/relative-lock schedule. ASERT makes difficulty depend on
-  every candidate timestamp, so this fixture still needs an ASERT-native block
-  sequence. The failure is currently `bad-txns-nonfinal` in the fixture's
-  relative-lock scenario, not a live-node connect/reorg failure.
-- The complete upstream functional suite, GUI build, fuzzing, sanitizer runs,
-  long reorg simulation, and expiry-height-scale test have not yet been
-  completed. A basic two-node synchronization and transfer scenario has now
-  passed, but broader network partition and competing-chain scenarios remain.
-- AddressSanitizer/LeakSanitizer could not run in the current restricted
-  process environment; focused UndefinedBehaviorSanitizer runs passed. This is
-  not a substitute for the pending full sanitizer CI jobs.
-- Public DNS seeds, signed reproducible releases, long-running public testnet,
-  and independent security review require external infrastructure or reviewers.
-- The alpha packaging and identity changes were made in a workspace without
-  CMake or Boost development headers. Static checks and dependency-free
-  consensus harnesses can run here, but a dependency-complete build and live
-  two-node alpha test are required before publishing binaries or opening the
-  public alpha network.
+The final Git objects were not present in the retained `dd03168` archive. The
+two intended deltas were reconstructed on 2026-08-05: the verified regtest
+fixture and the empty-span safety repair with its regression test.
+
+The reconstructed tree passed the checks available in the recovery workspace:
+
+- syntax-only compilation of `src/kernel/chainparams.cpp`, `src/streams.cpp`,
+  and `src/test/streams_tests.cpp`;
+- all six standalone Recycle harnesses in optimized and UBSan builds, including
+  the three 600-year simulations;
+- `lint-files`, `lint-include-guards`, `lint-includes`,
+  `lint-circular-dependencies`, `lint-tests`, and Git whitespace checks.
+
+That workspace did not contain CMake, libevent, SQLite, or the full supported
+Boost development package. Therefore the **current reconstructed commit must
+repeat the 375-test CTest run on the target Ubuntu machine before P2P port
+49595 is opened**. The earlier 375/375 results are retained above as the
+verification record of the completed candidate, not represented as a fresh
+run of the reconstructed archive.
+
+## Remaining release debt
+
+- Repeat the normal full build/CTest and ASan+UBSan CTest on the recovered
+  commit; run LSan on an unrestricted Linux host.
+- Test GUI, IPC, ZMQ, fuzz targets, and migration from previous alpha data.
+- Run multi-machine partition, competing-chain, long-reorganization, and soak
+  tests.
+- Obtain independent consensus and security review.
+- Establish public seed infrastructure and signed reproducible binaries before
+  treating the network as more than an experimental alpha.
 
 ## Readiness assessment
 
-This checkpoint is a working experimental consensus prototype, not a safe
-value-bearing mainnet release. It should proceed through an ASERT-native miner
-fixture, wallet expiry behavior, multi-node functional tests, fuzz/sanitizer
-runs, testnet soak, and independent review before any launch decision.
+The source is a candidate for a resettable, valueless public alpha. It is not a
+safe value-bearing mainnet release. Complete the target-host 375-test run and
+confirm the source commit and archive hash before starting the first public
+node.
