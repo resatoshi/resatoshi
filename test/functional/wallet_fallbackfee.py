@@ -21,12 +21,17 @@ class WalletFallbackFeeTest(BitcoinTestFramework):
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
 
-    def sending_succeeds(self, node):
+    def sending_succeeds(self, node, expected_fee_rate_sat_vb=None):
         # Check that fallback fee is being used as a test-of-the-test.
+        send_result = node.sendtoaddress(node.getnewaddress(), 1, verbose=True)
         assert_equal(
-            node.sendtoaddress(node.getnewaddress(), 1, verbose=True)['fee_reason'],
+            send_result['fee_reason'],
             "Fallback fee"
         )
+        if expected_fee_rate_sat_vb is not None:
+            entry = node.getmempoolentry(send_result['txid'])
+            actual_fee_rate_sat_vb = entry['fees']['base'] * Decimal(1e8) / entry['vsize']
+            assert_equal(actual_fee_rate_sat_vb, expected_fee_rate_sat_vb)
         node.fundrawtransaction(node.createrawtransaction([], {node.getnewaddress(): 1}))
         assert_equal(
             node.sendmany("", {node.getnewaddress(): 1}, verbose=True)["fee_reason"],
@@ -47,9 +52,9 @@ class WalletFallbackFeeTest(BitcoinTestFramework):
         node.replace_in_config([("fallbackfee=", "#fallbackfee=")])
         self.restart_node(0)
 
-        # Sending a transaction with no -fallbackfee setting fails, since the
-        # default value is 0.
-        self.sending_fails(node)
+        # ReSatoshi defaults to 1 sat/vB so a fresh wallet can send before fee
+        # estimation has enough data.
+        self.sending_succeeds(node, expected_fee_rate_sat_vb=Decimal('1'))
 
         # Sending a tx with explicitly disabled fallback fee fails.
         self.restart_node(0, extra_args=["-fallbackfee=0"])

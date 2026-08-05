@@ -157,6 +157,26 @@ separation directly and does not change production or consensus code. A
 complete target-host CTest and functional-suite rerun is required for the
 exact follow-up commit.
 
+## Default wallet fallback fee repair
+
+The candidate previously retained Bitcoin Core's disabled-by-default wallet
+fallback fee (`DEFAULT_FALLBACK_FEE = 0`). On a fresh regtest or public alpha
+node without enough fee-estimation history, ordinary wallet sends therefore
+failed unless `-fallbackfee` or an explicit RPC fee rate was supplied.
+
+This repair sets the default fallback fee to `0.00001000 RST/kvB` (1 sat/vB).
+The functional regression test now requires all of the following:
+
+- a send without a `-fallbackfee` setting succeeds using the fallback path;
+- the resulting mempool transaction pays exactly 1 sat/vB; and
+- an explicit `-fallbackfee=0` still disables fallback sends.
+
+Source whitespace, file, test-metadata, and Python syntax checks passed in the
+repair workspace. That workspace lacked the Boost and SQLite development
+headers required for a complete ReSatoshi build, so the exact repair commit
+still requires a full target-host CTest/functional run and one isolated regtest
+wallet send before opening the public-alpha P2P port.
+
 ## Remaining release debt
 
 - Repeat the normal 370-test build/CTest for the exact follow-up commit, then repeat
