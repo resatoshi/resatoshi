@@ -607,4 +607,4 @@ jobs:
       - name: CI script
         run: |
           git worktree add ../lint-worktree HEAD
-          ../lint-worktree/ci/lint.py
+          ../lint-worktree/ci/lint.py --lint=doc --lint=includes_build_config --lint=markdown --lint=py_lint --lint=rmtree --lint=std_filesystem --lint=remove_all --lint=rpc_assert --lint=boost_assert --lint=doc_release_note_snippets --lint=scripted_diff --lint=commit_msg --lint=tabs_whitespace --lint=trailing_whitespace --lint=trailing_newline --lint=all_python_linters
