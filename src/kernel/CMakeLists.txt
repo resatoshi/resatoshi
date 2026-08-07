@@ -23,6 +23,8 @@ add_library(bitcoinkernel
   ../coins.cpp
   ../compressor.cpp
   ../consensus/merkle.cpp
+  ../consensus/recycle_pool.cpp
+  ../consensus/recycle_state.cpp
   ../consensus/tx_check.cpp
   ../consensus/tx_verify.cpp
   ../dbwrapper.cpp
@@ -70,6 +72,7 @@ add_library(bitcoinkernel
   ../util/moneystr.cpp
   ../util/rbf.cpp
   ../util/signalinterrupt.cpp
+  ../util/strencodings.cpp
   ../util/syserror.cpp
   ../util/thread.cpp
   ../util/threadnames.cpp
