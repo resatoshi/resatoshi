@@ -901,16 +901,16 @@ void chainman_mainnet_validation_test(TestDirectory& test_directory)
         /*block_tree_db_in_memory=*/false, /*chainstate_db_in_memory=*/false, context)};
 
     // mainnet block 1
-    auto raw_block = hex_string_to_byte_vec("010000006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000982051fd1e4ba744bbbe680e1fee14677ba1a3c3540bf7b1cdb606e857233e0e61bc6649ffff001d01e362990101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704ffff001d0104ffffffff0100f2052a0100000043410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac00000000");
+    auto raw_block = hex_string_to_byte_vec("000000200078ba947aedc413eac09973e68ff170864f21c9d43019ddf6c74626bbab000039aee1e9ead06b03fbc8654eee774812bf580b4ce2fa12a4842894c5cd13682be9a2766affff001f9648000001020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff025100feffffff0200f2052a01000000160014cd3fb515e9f3282672dc49da290b20d695dfab400000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf90120000000000000000000000000000000000000000000000000000000000000000000000000");
     Block block{raw_block};
     BlockHeader header{block.GetHeader()};
     TransactionView tx{block.GetTransaction(block.CountTransactions() - 1)};
-    BOOST_CHECK_EQUAL(byte_span_to_hex_string_reversed(tx.Txid().ToBytes()), "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098");
-    BOOST_CHECK_EQUAL(header.Version(), 1);
-    BOOST_CHECK_EQUAL(header.Timestamp(), 1231469665);
-    BOOST_CHECK_EQUAL(header.Bits(), 0x1d00ffff);
-    BOOST_CHECK_EQUAL(header.Nonce(), 2573394689);
-    BOOST_CHECK_EQUAL(tx.CountInputs(), 1);
+    BOOST_CHECK_EQUAL(byte_span_to_hex_string_reversed(block.GetHash().ToBytes()), "0000b95b95b0b4f95c6eca7cd29f4d2d4e97dff705b00f936e0ba5c68dc9dd70");
+    BOOST_CHECK_EQUAL(byte_span_to_hex_string_reversed(tx.Txid().ToBytes()), "2b6813cdc5942884a412fae24c0b58bf124877ee4e65c8fb036bd0eae9e1ae39");
+    BOOST_CHECK_EQUAL(header.Version(), 0x20000000);
+    BOOST_CHECK_EQUAL(header.Timestamp(), 1786159849);
+    BOOST_CHECK_EQUAL(header.Bits(), 0x1f00ffff);
+    BOOST_CHECK_EQUAL(header.Nonce(), 18582);
     Transaction tx2 = tx;
     BOOST_CHECK_EQUAL(tx2.CountInputs(), 1);
     for (auto transaction : block.Transactions()) {
@@ -919,7 +919,7 @@ void chainman_mainnet_validation_test(TestDirectory& test_directory)
     auto output_counts = *(block.Transactions() | std::views::transform([](const auto& tx) {
                                return tx.CountOutputs();
                            })).begin();
-    BOOST_CHECK_EQUAL(output_counts, 1);
+    BOOST_CHECK_EQUAL(output_counts, 2);
 
     validation_interface->m_expected_valid_block.emplace(raw_block);
     auto ser_block{block.ToBytes()};
@@ -930,7 +930,10 @@ void chainman_mainnet_validation_test(TestDirectory& test_directory)
 
     validation_interface->m_expected_valid_block = std::nullopt;
     new_block = false;
-    Block invalid_block{hex_string_to_byte_vec(REGTEST_BLOCK_DATA[REGTEST_BLOCK_DATA.size() - 1])};
+    auto invalid_block_data{raw_block};
+    invalid_block_data.at(79) ^= std::byte{1}; // Give the mutated block a distinct header hash.
+    invalid_block_data.at(invalid_block_data.size() - 1) ^= std::byte{1};
+    Block invalid_block{invalid_block_data};
     BOOST_CHECK(!chainman->ProcessBlock(invalid_block, &new_block));
     BOOST_CHECK(!new_block);
 
