@@ -10,6 +10,7 @@
 
 unsigned-integer-overflow:*/include/c++/
 unsigned-integer-overflow:boost/multiprecision/
+invalid-shift-base:boost/multiprecision/
 unsigned-integer-overflow:FuzzedDataProvider::ConsumeIntegralInRange
 unsigned-integer-overflow:leveldb/
 unsigned-integer-overflow:minisketch/
