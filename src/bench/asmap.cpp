@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
+#include <netaddress.h>
 #include <netbase.h>
 #include <netgroup.h>
 #include <node/data/ip_asn.dat.h>
@@ -12,8 +13,11 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
+#include <optional>
 #include <span>
 #include <string>
+#include <vector>
 
 static void BenchGetMappedAS(benchmark::Bench& bench, std::span<const CNetAddr> addrs, bool check = true)
 {

@@ -14,11 +14,8 @@
 #include <kernel/messagestartchars.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
-#include <script/interpreter.h>
 #include <script/script.h>
-#include <script/verify_flags.h>
 #include <uint256.h>
-#include <arith_uint256.h>
 #include <util/chaintype.h>
 #include <util/log.h>
 #include <util/strencodings.h>
@@ -29,7 +26,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iterator>
-#include <map>
+#include <initializer_list>
 #include <span>
 #include <utility>
 
