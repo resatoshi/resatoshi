@@ -153,9 +153,7 @@ void initialize()
                                                {
                                                    // Exercise headers pre-sync even though ReSatoshi mainnet does not
                                                    // currently configure a default minimum-chain-work threshold.
-                                                   .extra_args = {
-                                                       "-minimumchainwork=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-                                                   },
+                                                   .minimum_chain_work = ~arith_uint256{},
                                                    .setup_validation_interface = false,
                                                }),
     };

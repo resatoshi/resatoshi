@@ -5,6 +5,7 @@
 #ifndef BITCOIN_TEST_UTIL_SETUP_COMMON_H
 #define BITCOIN_TEST_UTIL_SETUP_COMMON_H
 
+#include <arith_uint256.h>
 #include <common/args.h> // IWYU pragma: export
 #include <consensus/amount.h>
 #include <kernel/caches.h>
@@ -45,6 +46,7 @@ void SetupCommonTestArgs(ArgsManager& argsman);
 
 struct TestOpts {
     std::vector<const char*> extra_args{};
+    std::optional<arith_uint256> minimum_chain_work{};
     bool coins_db_in_memory{true};
     bool block_tree_db_in_memory{true};
     bool setup_net{true};
