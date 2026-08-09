@@ -11,7 +11,16 @@
 #include <uint256.h>
 #include <util/check.h>
 
+// MSVC rejects Boost's unused cpp_int user-defined literal templates. Skip
+// those declarations in this translation unit; CalculateASERT only uses the
+// runtime cpp_int type.
+#if defined(_MSC_VER)
+#define BOOST_MP_CPP_INT_LITERALS_HPP
+#endif
 #include <boost/multiprecision/cpp_int.hpp>
+#if defined(_MSC_VER)
+#undef BOOST_MP_CPP_INT_LITERALS_HPP
+#endif
 
 #include <limits>
 
