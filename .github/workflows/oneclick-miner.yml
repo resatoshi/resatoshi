@@ -26,8 +26,9 @@ jobs:
       - name: Verify base commit
         shell: pwsh
         run: |
-          git cat-file -e fa70158bf1a560da666b10ad357800ca7b250428^{commit}
-          if ((git rev-parse fa70158bf1a560da666b10ad357800ca7b250428) -ne 'fa70158bf1a560da666b10ad357800ca7b250428') { throw 'Base commit mismatch' }
+          $base = 'fa70158bf1a560da666b10ad357800ca7b250428'
+          if ((git cat-file -t $base) -ne 'commit') { throw 'Base object is not a commit' }
+          if ((git rev-parse $base) -ne $base) { throw 'Base commit mismatch' }
 
       - name: Download tested fa70158 Windows UCRT executables
         uses: actions/download-artifact@v8
@@ -76,8 +77,8 @@ jobs:
       - name: Run Windows self-test
         shell: pwsh
         run: |
-          & ./publish/ReSatoshi-OneClick-Miner-fa70158-win64.exe --self-test
-          if ($LASTEXITCODE -ne 0) { throw "Self-test failed: $LASTEXITCODE" }
+          $process = Start-Process -FilePath ./publish/ReSatoshi-OneClick-Miner-fa70158-win64.exe -ArgumentList '--self-test' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Self-test failed: $($process.ExitCode)" }
 
       - name: Scan packaging source for destructive or unsafe options
         shell: pwsh
