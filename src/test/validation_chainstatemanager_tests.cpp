@@ -308,6 +308,13 @@ struct SnapshotTestSetup : TestChain100Setup {
                 // Wrong hash
                 metadata.m_base_blockhash = uint256::ONE;
         }));
+        BOOST_REQUIRE(!CreateAndActivateUTXOSnapshot(
+            this, [](AutoFile&, SnapshotMetadata& metadata) {
+                // The Recycle Pool balance is consensus state and may not be
+                // supplied by an untrusted snapshot independently of the
+                // hardcoded assumeutxo commitment.
+                metadata.m_recycle_pool_balance = COIN;
+        }));
 
         BOOST_REQUIRE(CreateAndActivateUTXOSnapshot(this));
         BOOST_CHECK(fs::exists(*node::FindAssumeutxoChainstateDir(chainman.m_options.datadir)));
@@ -347,6 +354,8 @@ struct SnapshotTestSetup : TestChain100Setup {
                 BOOST_TEST_MESSAGE("Checking coins in " << chainstate->ToString());
                 CCoinsViewCache& coinscache = chainstate->CoinsTip();
 
+                BOOST_CHECK_EQUAL(coinscache.GetRecyclePoolBalance(), au_data->recycle_pool_balance);
+
                 // Both caches will be empty initially.
                 BOOST_CHECK_EQUAL((unsigned int)0, coinscache.GetCacheSize());
 
@@ -355,6 +364,10 @@ struct SnapshotTestSetup : TestChain100Setup {
                 for (CTransactionRef& txn : m_coinbase_txns) {
                     COutPoint op{txn->GetHash(), 0};
                     BOOST_CHECK(coinscache.HaveCoin(op));
+                    const Coin& coin{coinscache.AccessCoin(op)};
+                    const auto expiry_entries{coinscache.GetRecycleExpiryBucket(
+                        static_cast<uint32_t>(coin.nHeight) + Consensus::UTXO_EXPIRY_AGE)};
+                    BOOST_CHECK(expiry_entries.contains(op));
                     total_coins++;
                 }
 
