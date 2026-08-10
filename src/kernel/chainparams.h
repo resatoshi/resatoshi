@@ -6,6 +6,7 @@
 #ifndef BITCOIN_KERNEL_CHAINPARAMS_H
 #define BITCOIN_KERNEL_CHAINPARAMS_H
 
+#include <consensus/amount.h>
 #include <consensus/params.h>
 #include <kernel/messagestartchars.h>
 #include <primitives/block.h>
