@@ -5,6 +5,8 @@
 #include <addresstype.h>
 #include <clientversion.h>
 #include <coins.h>
+#include <consensus/params.h>
+#include <consensus/recycle_pool.h>
 #include <streams.h>
 #include <test/util/common.h>
 #include <test/util/poolresourcetester.h>
@@ -1085,6 +1087,37 @@ BOOST_FIXTURE_TEST_CASE(coins_db_leveldb_layout, FlushTest)
 
     BOOST_CHECK(*Assert(base.GetCoin(outpoint)) == coin);
     BOOST_CHECK_EQUAL(base.GetBestBlock(), block_hash);
+}
+
+BOOST_FIXTURE_TEST_CASE(recycle_state_survives_database_restart, FlushTest)
+{
+    const fs::path db_path{m_args.GetDataDirBase() / "recycle_state_restart"};
+    const COutPoint outpoint{Txid::FromUint256(m_rng.rand256()), 3};
+    Coin coin{MakeCoin()};
+    coin.nHeight = 777;
+    coin.out.nValue = 9 * COIN;
+    const int expiry_height{Consensus::UTXOExpiryHeight(coin.nHeight)};
+    const uint256 block_hash{m_rng.rand256()};
+
+    {
+        CCoinsViewDB base{{.path = db_path, .cache_bytes = 1_MiB, .wipe_data = true}, {}};
+        CCoinsViewCache cache{&base};
+        cache.AddCoin(outpoint, Coin{coin}, false);
+        cache.SetRecyclePoolBalance(17 * COIN);
+        cache.SetBestBlock(block_hash);
+        cache.Sync();
+    }
+
+    {
+        CCoinsViewDB base{{.path = db_path, .cache_bytes = 1_MiB}, {}};
+        CCoinsViewCache cache{&base};
+        BOOST_CHECK_EQUAL(cache.GetBestBlock(), block_hash);
+        BOOST_CHECK_EQUAL(cache.GetRecyclePoolBalance(), 17 * COIN);
+        BOOST_REQUIRE(cache.HaveCoin(outpoint));
+        const auto bucket{cache.GetRecycleExpiryBucket(expiry_height)};
+        BOOST_REQUIRE_EQUAL(bucket.size(), 1U);
+        BOOST_CHECK(bucket.contains(outpoint));
+    }
 }
 
 BOOST_AUTO_TEST_CASE(coins_resource_is_used)

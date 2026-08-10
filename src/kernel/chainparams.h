@@ -46,6 +46,10 @@ struct AssumeutxoData {
     //! The hash of the base block for this snapshot. Used to refer to assumeutxo data
     //! prior to having a loaded blockindex.
     uint256 blockhash;
+
+    //! Consensus Recycle Pool balance at the snapshot base block. This is
+    //! security critical state that cannot be reconstructed from the UTXO set.
+    CAmount recycle_pool_balance{0};
 };
 
 /**

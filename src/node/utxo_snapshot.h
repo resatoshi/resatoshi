@@ -6,6 +6,7 @@
 #ifndef BITCOIN_NODE_UTXO_SNAPSHOT_H
 #define BITCOIN_NODE_UTXO_SNAPSHOT_H
 
+#include <consensus/amount.h>
 #include <kernel/chainparams.h>
 #include <kernel/cs_main.h>
 #include <kernel/messagestartchars.h>
@@ -36,8 +37,8 @@ namespace node {
 //! before being used. Thus, new fields should be added only if needed.
 class SnapshotMetadata
 {
-    static constexpr uint16_t VERSION{2};
-    const std::set<uint16_t> m_supported_versions{VERSION};
+    static constexpr uint16_t VERSION{3};
+    const std::set<uint16_t> m_supported_versions{2, VERSION};
     const MessageStartChars m_network_magic;
 public:
     //! The hash of the block that reflects the tip of the chain for the
@@ -49,16 +50,27 @@ public:
     //! during snapshot load to estimate progress of UTXO set reconstruction.
     uint64_t m_coins_count = 0;
 
+    //! Consensus Recycle Pool balance at m_base_blockhash. Version 2
+    //! snapshots predate this field and deserialize it as zero.
+    CAmount m_recycle_pool_balance{0};
+
     SnapshotMetadata(
         const MessageStartChars network_magic) :
             m_network_magic(network_magic) { }
     SnapshotMetadata(
         const MessageStartChars network_magic,
         const uint256& base_blockhash,
-        uint64_t coins_count) :
+        uint64_t coins_count,
+        CAmount recycle_pool_balance = 0) :
             m_network_magic(network_magic),
             m_base_blockhash(base_blockhash),
-            m_coins_count(coins_count) { }
+            m_coins_count(coins_count),
+            m_recycle_pool_balance(recycle_pool_balance) { }
+
+    bool MatchesRecyclePoolBalance(CAmount expected) const
+    {
+        return m_recycle_pool_balance == expected;
+    }
 
     template <typename Stream>
     inline void Serialize(Stream& s) const {
@@ -67,6 +79,7 @@ public:
         s << m_network_magic;
         s << m_base_blockhash;
         s << m_coins_count;
+        s << m_recycle_pool_balance;
     }
 
     template <typename Stream>
@@ -102,6 +115,11 @@ public:
 
         s >> m_base_blockhash;
         s >> m_coins_count;
+        if (version >= 3) {
+            s >> m_recycle_pool_balance;
+        } else {
+            m_recycle_pool_balance = 0;
+        }
     }
 };
 
