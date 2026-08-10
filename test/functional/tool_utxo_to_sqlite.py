@@ -40,6 +40,22 @@ from test_framework.util import (
 )
 from test_framework.wallet import MiniWallet
 
+SNAPSHOT_MAGIC_SIZE = 5
+SNAPSHOT_VERSION_SIZE = 2
+SNAPSHOT_NETWORK_MAGIC_SIZE = 4
+SNAPSHOT_BASE_HASH_SIZE = 32
+SNAPSHOT_COINS_COUNT_SIZE = 8
+SNAPSHOT_RECYCLE_POOL_SIZE = 8
+SNAPSHOT_VERSION_OFFSET = SNAPSHOT_MAGIC_SIZE
+SNAPSHOT_NETWORK_MAGIC_OFFSET = SNAPSHOT_VERSION_OFFSET + SNAPSHOT_VERSION_SIZE
+SNAPSHOT_RECYCLE_POOL_OFFSET = (
+    SNAPSHOT_NETWORK_MAGIC_OFFSET
+    + SNAPSHOT_NETWORK_MAGIC_SIZE
+    + SNAPSHOT_BASE_HASH_SIZE
+    + SNAPSHOT_COINS_COUNT_SIZE
+)
+SNAPSHOT_UTXO_DATA_OFFSET = SNAPSHOT_RECYCLE_POOL_OFFSET + SNAPSHOT_RECYCLE_POOL_SIZE
+
 
 def calculate_muhash_from_sqlite_utxos(filename, txid_format, spk_format):
     muhash = MuHash3072()
@@ -121,12 +137,13 @@ class UtxoToSqliteTest(BitcoinTestFramework):
         input_filename = os.path.join(self.options.tmpdir, "utxos.dat")
         node.dumptxoutset(input_filename, "latest")
 
+        base_dir = self.config["environment"]["SRCDIR"]
+        utxo_to_sqlite_path = os.path.join(base_dir, "contrib", "utxo-tools", "utxo_to_sqlite.py")
+
         for i, (txid_format, spk_format) in enumerate(product(["hex", "raw", "rawle"], ["hex", "raw"])):
             self.log.info(f'Test utxo-to-sqlite script using txid format "{txid_format}" and spk format "{spk_format}" ({i+1})')
             self.log.info('-> Convert UTXO set from compact-serialized format to sqlite format')
             output_filename = os.path.join(self.options.tmpdir, f"utxos_{i+1}.sqlite")
-            base_dir = self.config["environment"]["SRCDIR"]
-            utxo_to_sqlite_path = os.path.join(base_dir, "contrib", "utxo-tools", "utxo_to_sqlite.py")
             arguments = [input_filename, output_filename, f'--txid={txid_format}', f'--spk={spk_format}']
             subprocess.run([sys.executable, utxo_to_sqlite_path] + arguments, check=True, stderr=subprocess.STDOUT)
 
@@ -135,6 +152,34 @@ class UtxoToSqliteTest(BitcoinTestFramework):
             muhash_compact_serialized = node.gettxoutsetinfo('muhash')['muhash']
             assert_equal(muhash_sqlite, muhash_compact_serialized)
             self.log.info('')
+
+        self.log.info('Test backward-compatible conversion of a version 2 snapshot')
+        with open(input_filename, "rb") as snapshot_file:
+            snapshot_v3 = snapshot_file.read()
+        assert_equal(
+            int.from_bytes(snapshot_v3[SNAPSHOT_VERSION_OFFSET:SNAPSHOT_NETWORK_MAGIC_OFFSET], "little"),
+            3,
+        )
+        assert_equal(
+            int.from_bytes(snapshot_v3[SNAPSHOT_RECYCLE_POOL_OFFSET:SNAPSHOT_UTXO_DATA_OFFSET], "little", signed=True),
+            0,
+        )
+        input_v2_filename = os.path.join(self.options.tmpdir, "utxos_v2.dat")
+        with open(input_v2_filename, "wb") as snapshot_file:
+            snapshot_file.write(snapshot_v3[:SNAPSHOT_VERSION_OFFSET])
+            snapshot_file.write((2).to_bytes(SNAPSHOT_VERSION_SIZE, "little"))
+            snapshot_file.write(snapshot_v3[SNAPSHOT_NETWORK_MAGIC_OFFSET:SNAPSHOT_RECYCLE_POOL_OFFSET])
+            snapshot_file.write(snapshot_v3[SNAPSHOT_UTXO_DATA_OFFSET:])
+        output_v2_filename = os.path.join(self.options.tmpdir, "utxos_v2.sqlite")
+        subprocess.run(
+            [sys.executable, utxo_to_sqlite_path, input_v2_filename, output_v2_filename],
+            check=True,
+            stderr=subprocess.STDOUT,
+        )
+        assert_equal(
+            calculate_muhash_from_sqlite_utxos(output_v2_filename, "hex", "hex"),
+            node.gettxoutsetinfo("muhash")["muhash"],
+        )
 
         if platform.system() != "Windows":  # FIFOs are not available on Windows
             self.log.info('Convert UTXO set directly (without intermediate dump) via named pipe')
