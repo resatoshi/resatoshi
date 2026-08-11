@@ -76,7 +76,7 @@ using node::NodeContext;
 using node::SnapshotMetadata;
 using util::MakeUnorderedList;
 
-std::tuple<std::unique_ptr<CCoinsViewCursor>, CCoinsStats, const CBlockIndex*>
+std::tuple<std::unique_ptr<CCoinsViewCursor>, CCoinsStats, const CBlockIndex*, CAmount>
 PrepareUTXOSnapshot(
     Chainstate& chainstate,
     const std::function<void()>& interruption_point = {})
@@ -87,6 +87,7 @@ UniValue WriteUTXOSnapshot(
     CCoinsViewCursor* pcursor,
     CCoinsStats* maybe_stats,
     const CBlockIndex* tip,
+    CAmount recycle_pool_balance,
     AutoFile&& afile,
     const fs::path& path,
     const fs::path& temppath,
@@ -3327,6 +3328,7 @@ UniValue CreateRolledBackUTXOSnapshot(
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to compute UTXO statistics");
     }
 
+    const CAmount recycle_pool_balance{temp_db->GetRecyclePoolBalance()};
     std::unique_ptr<CCoinsViewCursor> pcursor{temp_db->Cursor()};
 
     LogInfo("Writing snapshot to disk.");
@@ -3334,13 +3336,14 @@ UniValue CreateRolledBackUTXOSnapshot(
                              pcursor.get(),
                              &(*maybe_stats),
                              target,
+                             recycle_pool_balance,
                              std::move(afile),
                              path,
                              tmppath,
                              node.rpc_interruption_point);
 }
 
-std::tuple<std::unique_ptr<CCoinsViewCursor>, CCoinsStats, const CBlockIndex*>
+std::tuple<std::unique_ptr<CCoinsViewCursor>, CCoinsStats, const CBlockIndex*, CAmount>
 PrepareUTXOSnapshot(
     Chainstate& chainstate,
     const std::function<void()>& interruption_point)
@@ -3348,12 +3351,14 @@ PrepareUTXOSnapshot(
     std::unique_ptr<CCoinsViewCursor> pcursor;
     std::optional<CCoinsStats> maybe_stats;
     const CBlockIndex* tip;
+    CAmount recycle_pool_balance;
 
     {
         // We need to lock cs_main to ensure that the coinsdb isn't written to
         // between (i) flushing coins cache to disk (coinsdb), (ii) getting stats
-        // based upon the coinsdb, and (iii) constructing a cursor to the
-        // coinsdb for use in WriteUTXOSnapshot.
+        // based upon the coinsdb, (iii) reading the Recycle Pool balance, and
+        // (iv) constructing a cursor to the coinsdb for use in
+        // WriteUTXOSnapshot.
         //
         // Cursors returned by leveldb iterate over snapshots, so the contents
         // of the pcursor will not be affected by simultaneous writes during
@@ -3371,11 +3376,12 @@ PrepareUTXOSnapshot(
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
         }
 
-        pcursor = chainstate.CoinsDB().Cursor();
         tip = CHECK_NONFATAL(chainstate.m_blockman.LookupBlockIndex(maybe_stats->hashBlock));
+        recycle_pool_balance = chainstate.CoinsDB().GetRecyclePoolBalance();
+        pcursor = chainstate.CoinsDB().Cursor();
     }
 
-    return {std::move(pcursor), *CHECK_NONFATAL(maybe_stats), tip};
+    return {std::move(pcursor), *CHECK_NONFATAL(maybe_stats), tip, recycle_pool_balance};
 }
 
 UniValue WriteUTXOSnapshot(
@@ -3383,6 +3389,7 @@ UniValue WriteUTXOSnapshot(
     CCoinsViewCursor* pcursor,
     CCoinsStats* maybe_stats,
     const CBlockIndex* tip,
+    const CAmount recycle_pool_balance,
     AutoFile&& afile,
     const fs::path& path,
     const fs::path& temppath,
@@ -3394,7 +3401,7 @@ UniValue WriteUTXOSnapshot(
 
     SnapshotMetadata metadata{
         chainstate.m_chainman.GetParams().MessageStart(), tip->GetBlockHash(),
-        maybe_stats->coins_count, chainstate.CoinsTip().GetRecyclePoolBalance()};
+        maybe_stats->coins_count, recycle_pool_balance};
 
     afile << metadata;
 
@@ -3466,11 +3473,12 @@ UniValue CreateUTXOSnapshot(
     const fs::path& path,
     const fs::path& tmppath)
 {
-    auto [cursor, stats, tip]{WITH_LOCK(::cs_main, return PrepareUTXOSnapshot(chainstate, node.rpc_interruption_point))};
+    auto [cursor, stats, tip, recycle_pool_balance]{WITH_LOCK(::cs_main, return PrepareUTXOSnapshot(chainstate, node.rpc_interruption_point))};
     return WriteUTXOSnapshot(chainstate,
                              cursor.get(),
                              &stats,
                              tip,
+                             recycle_pool_balance,
                              std::move(afile),
                              path,
                              tmppath,
