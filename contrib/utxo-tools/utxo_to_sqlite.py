@@ -21,7 +21,7 @@ import time
 
 
 UTXO_DUMP_MAGIC = b'utxo\xff'
-UTXO_DUMP_VERSION = 2
+UTXO_DUMP_VERSIONS = (2, 3)
 NET_MAGIC_BYTES = {
     b"\xf9\xbe\xb4\xd9": "Mainnet",
     b"\x0a\x03\xcf\x40": "Signet",
@@ -137,7 +137,8 @@ def main():
     con = sqlite3.connect(args.outfile)
     con.execute(f"CREATE TABLE utxos(txid {txid_fmt}, vout INT, value INT, coinbase INT, height INT, scriptpubkey {spk_fmt})")
 
-    # read metadata (magic bytes, version, network magic, block hash, UTXO count)
+    # Read metadata. Version 3 appends the consensus Recycle Pool balance;
+    # version 2 snapshots predate it and implicitly have a zero balance.
     f = open(args.infile, 'rb')
     magic_bytes = f.read(5)
     version = int.from_bytes(f.read(2), 'little')
@@ -147,13 +148,15 @@ def main():
     if magic_bytes != UTXO_DUMP_MAGIC:
         print(f"Error: provided input file '{args.infile}' is not an UTXO dump.")
         sys.exit(1)
-    if version != UTXO_DUMP_VERSION:
+    if version not in UTXO_DUMP_VERSIONS:
         print(f"Error: provided input file '{args.infile}' has unknown UTXO dump version {version} "
-              f"(only version {UTXO_DUMP_VERSION} supported)")
+              f"(supported versions: {', '.join(map(str, UTXO_DUMP_VERSIONS))})")
         sys.exit(1)
+    recycle_pool_balance = int.from_bytes(f.read(8), 'little', signed=True) if version >= 3 else 0
     network_string = NET_MAGIC_BYTES.get(network_magic, f"unknown network ({network_magic.hex()})")
     print(f"UTXO Snapshot for {network_string} at block hash "
-          f"{block_hash[::-1].hex()[:32]}..., contains {num_utxos} coins")
+          f"{block_hash[::-1].hex()[:32]}..., contains {num_utxos} coins, "
+          f"Recycle Pool balance is {recycle_pool_balance}")
 
     start_time = time.time()
     write_batch = []

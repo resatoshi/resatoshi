@@ -303,6 +303,10 @@ if(WITH_EMBEDDED_ASMAP)
   target_raw_data_sources(bitcoin_node NAMESPACE node::data
     node/data/ip_asn.dat
   )
+  add_custom_target(generate_embedded_asmap ALL
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/node/data/ip_asn.dat.h
+  )
+  add_dependencies(bitcoin_node generate_embedded_asmap)
 endif()
 
 # Bitcoin wrapper executable that can call other executables.

@@ -18,4 +18,4 @@ export BITCOIN_CONFIG="\
  -DCMAKE_BUILD_TYPE=Debug \
 "
 export TEST_RUNNER_EXTRA="--v2transport --usecli --extended --exclude feature_dbcrash"  # Run extended tests under --usecli and --v2transport, but exclude the very slow dbcrash
-export BITCOIN_CMD="bitcoin -m" # Used in functional tests
+export BITCOIN_CMD="resatoshi -m" # Used in functional tests

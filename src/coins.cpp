@@ -132,6 +132,13 @@ void CCoinsViewCache::EmplaceCoinInternalDANGER(const COutPoint& outpoint, Coin&
         CCoinsCacheEntry::SetDirty(*it, m_sentinel);
         ++m_dirty_count;
         cachedCoinsUsage += mem_usage;
+        // AssumeUTXO bulk loading bypasses AddCoin(), so it must build the
+        // same deterministic expiry index explicitly. Otherwise a snapshot
+        // chainstate would retain outputs that a fully validated chainstate
+        // expires.
+        if (!it->second.coin.IsSpent() && !QueueRecycleExpiry(outpoint, it->second.coin)) {
+            throw std::logic_error("Failed to queue Recycle expiry entry while loading snapshot");
+        }
     }
 }
 

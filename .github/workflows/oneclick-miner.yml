@@ -1,0 +1,103 @@
+name: Build Windows One-Click Miner
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - fix/kernel-mainnet-validation
+    paths:
+      - .github/workflows/oneclick-miner.yml
+      - tools/oneclick-miner/**
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - name: Checkout packaging source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify base commit
+        shell: pwsh
+        run: |
+          $base = 'fa70158bf1a560da666b10ad357800ca7b250428'
+          if ((git cat-file -t $base) -ne 'commit') { throw 'Base object is not a commit' }
+          if ((git rev-parse $base) -ne $base) { throw 'Base commit mismatch' }
+
+      - name: Download tested fa70158 Windows UCRT executables
+        uses: actions/download-artifact@v8
+        with:
+          name: x86_64-w64-mingw32ucrt-executables-31300000599
+          path: windows-ucrt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: resatoshi/resatoshi
+          run-id: 31300000599
+
+      - name: Prepare embedded payload
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $payload = 'tools/oneclick-miner/payload'
+          New-Item -ItemType Directory -Force $payload | Out-Null
+          $daemon = Get-ChildItem windows-ucrt -Recurse -Filter resatoshid.exe | Select-Object -First 1
+          $cli = Get-ChildItem windows-ucrt -Recurse -Filter resatoshi-cli.exe | Select-Object -First 1
+          if (-not $daemon -or -not $cli) { throw 'Required Windows executables not found' }
+          Copy-Item $daemon.FullName "$payload/resatoshid.exe"
+          Copy-Item $cli.FullName "$payload/resatoshi-cli.exe"
+          Get-ChildItem $daemon.Directory.FullName -Filter *.dll | Copy-Item -Destination $payload
+          git archive --format=tar.gz --output="$payload/resatoshi-source-fa70158.tar.gz" fa70158bf1a560da666b10ad357800ca7b250428
+          Compress-Archive -Path tools/oneclick-miner/Program.cs,tools/oneclick-miner/ReSatoshi.OneClickMiner.csproj,.github/workflows/oneclick-miner.yml -DestinationPath "$payload/oneclick-miner-source.zip"
+          $files = Get-ChildItem $payload -File | Where-Object Name -ne manifest.json | ForEach-Object {
+            @{ Name = $_.Name; Sha256 = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(); Size = $_.Length }
+          }
+          @{ Commit = 'fa70158bf1a560da666b10ad357800ca7b250428'; Files = @($files) } | ConvertTo-Json -Depth 4 | Set-Content "$payload/manifest.json" -Encoding utf8NoBOM
+          Get-ChildItem $payload | Format-Table Name,Length
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish self-contained single-file EXE
+        shell: pwsh
+        run: dotnet publish tools/oneclick-miner/ReSatoshi.OneClickMiner.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
+
+      - name: Verify exactly one published file
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem publish -File)
+          if ($files.Count -ne 1 -or $files[0].Name -ne 'ReSatoshi-OneClick-Miner-fa70158-win64.exe') { $files | Format-Table; throw 'Publish output is not one EXE' }
+
+      - name: Run Windows self-test
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ./publish/ReSatoshi-OneClick-Miner-fa70158-win64.exe -ArgumentList '--self-test' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Self-test failed: $($process.ExitCode)" }
+
+      - name: Scan packaging source for destructive or unsafe options
+        shell: pwsh
+        run: |
+          $text = Get-Content tools/oneclick-miner/Program.cs -Raw
+          foreach ($forbidden in @('-reindex','-rescan','49594','createwallet.*resatoshi-miner.*true.*true','Directory.Delete\(_payload.DataDir','walletpassphrase','dumpprivkey')) {
+            if ($text -match $forbidden) { throw "Forbidden pattern: $forbidden" }
+          }
+
+      - name: Record final SHA-256
+        shell: pwsh
+        run: |
+          Get-Item publish/ReSatoshi-OneClick-Miner-fa70158-win64.exe | Format-List FullName,Length
+          Get-FileHash publish/ReSatoshi-OneClick-Miner-fa70158-win64.exe -Algorithm SHA256
+
+      - name: Upload final EXE
+        uses: actions/upload-artifact@v7
+        with:
+          name: ReSatoshi-OneClick-Miner-fa70158-win64
+          path: publish/ReSatoshi-OneClick-Miner-fa70158-win64.exe
+          if-no-files-found: error
+          compression-level: 0
