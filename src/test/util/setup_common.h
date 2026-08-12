@@ -7,6 +7,7 @@
 
 #include <common/args.h> // IWYU pragma: export
 #include <consensus/amount.h>
+#include <arith_uint256.h>
 #include <kernel/caches.h>
 #include <key.h>
 #include <node/caches.h>
@@ -45,6 +46,8 @@ void SetupCommonTestArgs(ArgsManager& argsman);
 
 struct TestOpts {
     std::vector<const char*> extra_args{};
+    std::optional<arith_uint256> minimum_chain_work{};
+    std::optional<std::vector<AssumeutxoData>> regtest_assumeutxo_data{};
     bool coins_db_in_memory{true};
     bool block_tree_db_in_memory{true};
     bool setup_net{true};

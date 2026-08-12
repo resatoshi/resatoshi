@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
 #include <chainparams.h>
+#include <consensus/recycle_pool.h>
 #include <consensus/validation.h>
 #include <kernel/disconnected_transactions.h>
 #include <node/chainstatemanager_args.h>
@@ -217,9 +218,10 @@ struct SnapshotTestSetup : TestChain100Setup {
     // Note that this means the tests run considerably slower than in-memory DB
     // tests, but we can't otherwise test this functionality since it relies on
     // destructive filesystem operations.
-    SnapshotTestSetup() : TestChain100Setup{
+    explicit SnapshotTestSetup(std::optional<std::vector<AssumeutxoData>> assumeutxo_data = std::nullopt) : TestChain100Setup{
                               {},
                               {
+                                  .regtest_assumeutxo_data = std::move(assumeutxo_data),
                                   .coins_db_in_memory = false,
                                   .block_tree_db_in_memory = false,
                               },
@@ -465,6 +467,262 @@ struct SnapshotTestSetup : TestChain100Setup {
         return *Assert(m_node.chainman);
     }
 };
+
+struct NonzeroRecycleSnapshotSetup : SnapshotTestSetup {
+    static std::vector<AssumeutxoData> AssumeutxoDataWithPool()
+    {
+        return {{
+            .height = 110,
+            .hash_serialized = AssumeutxoHash{uint256{"86e9a1205b418b16dde3a18a78c730e30137e28466bda5dbf6b33ab8fc05447c"}},
+            .m_chain_tx_count = 111,
+            .blockhash = uint256{"135eec25a6fb277884e5824e7aa7d052c4868161c99a5122170b5266f86c273d"},
+            .recycle_pool_balance = 7 * COIN,
+        }};
+    }
+
+    NonzeroRecycleSnapshotSetup() : SnapshotTestSetup{AssumeutxoDataWithPool()} {}
+};
+
+BOOST_FIXTURE_TEST_CASE(chainstatemanager_nonzero_recycle_snapshot, NonzeroRecycleSnapshotSetup)
+{
+    ChainstateManager& chainman{*Assert(m_node.chainman)};
+    mineBlocks(10);
+    BOOST_REQUIRE_EQUAL(WITH_LOCK(cs_main, return chainman.ActiveHeight()), 110);
+
+    Chainstate& validated{chainman.ActiveChainstate()};
+    {
+        LOCK(cs_main);
+        validated.CoinsTip().SetRecyclePoolBalance(7 * COIN);
+        validated.ForceFlushStateToDisk();
+    }
+
+    const CBlockIndex* const base{WITH_LOCK(cs_main, return chainman.ActiveTip())};
+    const size_t expected_coins{WITH_LOCK(cs_main, return validated.CoinsTip().GetCacheSize())};
+
+    // A v2 file has no Pool field and therefore deserializes to zero. It must
+    // be rejected against this nonzero hardcoded commitment.
+    const fs::path v3_path{m_path_root / "nonzero-v3.dat"};
+    {
+        AutoFile output{fsbridge::fopen(v3_path, "wb")};
+        CreateUTXOSnapshot(m_node, validated, std::move(output), v3_path, v3_path);
+    }
+    DataStream v3_bytes;
+    {
+        AutoFile input{fsbridge::fopen(v3_path, "rb")};
+        std::byte byte;
+        while (true) {
+            try { input >> byte; v3_bytes << byte; } catch (const std::ios_base::failure&) { break; }
+        }
+    }
+    constexpr size_t version_offset{5};
+    constexpr size_t network_offset{7};
+    constexpr size_t pool_offset{5 + 2 + 4 + 32 + 8};
+    constexpr size_t coins_offset{pool_offset + 8};
+    DataStream v2_bytes;
+    v2_bytes.write({v3_bytes.data(), version_offset});
+    v2_bytes << uint16_t{2};
+    v2_bytes.write({v3_bytes.data() + network_offset, pool_offset - network_offset});
+    v2_bytes.write({v3_bytes.data() + coins_offset, v3_bytes.size() - coins_offset});
+    const fs::path v2_path{m_path_root / "nonzero-v2.dat"};
+    {
+        AutoFile output{fsbridge::fopen(v2_path, "wb")};
+        output.write(v2_bytes);
+        BOOST_REQUIRE_EQUAL(output.fclose(), 0);
+    }
+    AutoFile v2_file{fsbridge::fopen(v2_path, "rb")};
+    node::SnapshotMetadata v2_metadata{Params().MessageStart()};
+    v2_file >> v2_metadata;
+    BOOST_CHECK_EQUAL(v2_metadata.m_recycle_pool_balance, 0);
+    CBlockIndex* original_tip;
+    {
+        LOCK(cs_main);
+        original_tip = validated.m_chain.Tip();
+        validated.m_chain.SetTip(*Assert(original_tip->pprev));
+    }
+    BOOST_CHECK(!chainman.ActivateSnapshot(v2_file, v2_metadata, /*in_memory=*/true));
+    {
+        LOCK(cs_main);
+        validated.m_chain.SetTip(*original_tip);
+    }
+
+    BOOST_REQUIRE(CreateAndActivateUTXOSnapshot(this));
+    Chainstate& snapshot{chainman.ActiveChainstate()};
+    BOOST_REQUIRE(&snapshot != &validated);
+
+    {
+        LOCK(cs_main);
+        BOOST_CHECK_EQUAL(snapshot.m_chain.Height(), 110);
+        BOOST_CHECK_EQUAL(snapshot.m_chain.Tip()->GetBlockHash(), base->GetBlockHash());
+        BOOST_CHECK_EQUAL(snapshot.CoinsTip().GetBestBlock(), base->GetBlockHash());
+        BOOST_CHECK_EQUAL(snapshot.CoinsTip().GetRecyclePoolBalance(), 7 * COIN);
+        BOOST_CHECK_EQUAL(validated.CoinsTip().GetRecyclePoolBalance(), 7 * COIN);
+        BOOST_CHECK_EQUAL(snapshot.CoinsTip().GetCacheSize(), expected_coins);
+        for (const CTransactionRef& tx : m_coinbase_txns) {
+            const COutPoint outpoint{tx->GetHash(), 0};
+            BOOST_REQUIRE(snapshot.CoinsTip().HaveCoin(outpoint));
+            BOOST_REQUIRE(validated.CoinsTip().HaveCoin(outpoint));
+            const Coin& coin{snapshot.CoinsTip().AccessCoin(outpoint)};
+            BOOST_CHECK(snapshot.CoinsTip().GetRecycleExpiryBucket(
+                Consensus::UTXOExpiryHeight(coin.nHeight)).contains(outpoint));
+        }
+    }
+
+    // The same candidate block must produce identical Recycle and UTXO state
+    // when checked against the fully validated and snapshot chainstates.
+    const CBlock next{CreateBlock({}, CScript{} << OP_TRUE)};
+    CBlockIndex* next_index{nullptr};
+    {
+        LOCK(cs_main);
+        BlockValidationState accept_state;
+        BOOST_REQUIRE(chainman.AcceptBlock(
+            std::make_shared<const CBlock>(next), accept_state, &next_index,
+            /*fRequested=*/true, nullptr, nullptr, /*min_pow_checked=*/true));
+        CCoinsViewCache validated_view{&validated.CoinsTip()};
+        CCoinsViewCache snapshot_view{&snapshot.CoinsTip()};
+        BlockValidationState validated_state;
+        BlockValidationState snapshot_state;
+        BOOST_REQUIRE(validated.ConnectBlock(next, validated_state, next_index, validated_view, /*fJustCheck=*/true));
+        BOOST_REQUIRE(snapshot.ConnectBlock(next, snapshot_state, next_index, snapshot_view, /*fJustCheck=*/true));
+        BOOST_CHECK_EQUAL(validated_view.GetBestBlock(), snapshot_view.GetBestBlock());
+        BOOST_CHECK_EQUAL(validated_view.GetRecyclePoolBalance(), snapshot_view.GetRecyclePoolBalance());
+        BOOST_CHECK_EQUAL(validated_view.GetCacheSize(), snapshot_view.GetCacheSize());
+    }
+
+    // Mine two blocks from a 7 RST Pool. Templates claim 1 RST each, so a
+    // rollback snapshot at height 110 must restore the historical 7 RST.
+    mineBlocks(2);
+    BOOST_CHECK_EQUAL(WITH_LOCK(cs_main, return snapshot.CoinsTip().GetRecyclePoolBalance()), 5 * COIN);
+    const fs::path rollback_path{m_path_root / "nonzero-rollback.dat"};
+    {
+        AutoFile output{fsbridge::fopen(rollback_path, "wb")};
+        const UniValue result{CreateRolledBackUTXOSnapshot(
+            m_node, snapshot, base, std::move(output), rollback_path, rollback_path,
+            /*in_memory=*/true)};
+        BOOST_REQUIRE_EQUAL(output.fclose(), 0);
+        BOOST_CHECK_EQUAL(result["base_height"].getInt<int>(), 110);
+        BOOST_CHECK_EQUAL(result["base_hash"].get_str(), base->GetBlockHash().ToString());
+    }
+    {
+        AutoFile input{fsbridge::fopen(rollback_path, "rb")};
+        node::SnapshotMetadata metadata{Params().MessageStart()};
+        input >> metadata;
+        BOOST_CHECK_EQUAL(metadata.m_recycle_pool_balance, 7 * COIN);
+    }
+
+    // Flush and reconstruct the managers through the existing restart path;
+    // the activated snapshot Pool and expiry index must survive.
+    ChainstateManager& restarted{SimulateNodeRestart()};
+    LoadVerifyActivateChainstate();
+    {
+        LOCK(cs_main);
+        Chainstate& active{restarted.ActiveChainstate()};
+        BOOST_CHECK_EQUAL(active.CoinsTip().GetRecyclePoolBalance(), 5 * COIN);
+        BOOST_CHECK_EQUAL(active.m_chain.Height(), 112);
+        const COutPoint outpoint{m_coinbase_txns.front()->GetHash(), 0};
+        const Coin& coin{active.CoinsTip().AccessCoin(outpoint)};
+        BOOST_REQUIRE(!coin.IsSpent());
+        BOOST_CHECK(active.CoinsTip().GetRecycleExpiryBucket(
+            Consensus::UTXOExpiryHeight(coin.nHeight)).contains(outpoint));
+    }
+}
+
+BOOST_FIXTURE_TEST_CASE(chainstatemanager_nonzero_recycle_rollback_snapshot, NonzeroRecycleSnapshotSetup)
+{
+    ChainstateManager& chainman{*Assert(m_node.chainman)};
+    mineBlocks(10);
+    Chainstate& validated{chainman.ActiveChainstate()};
+    {
+        LOCK(cs_main);
+        validated.CoinsTip().SetRecyclePoolBalance(7 * COIN);
+        validated.ForceFlushStateToDisk();
+    }
+    CBlockIndex* const rollback_base{WITH_LOCK(cs_main, return validated.m_chain[110])};
+    mineBlocks(2);
+    BOOST_REQUIRE_EQUAL(WITH_LOCK(cs_main, return validated.CoinsTip().GetRecyclePoolBalance()), 5 * COIN);
+
+    const fs::path rollback_path{m_path_root / "loadable-nonzero-rollback.dat"};
+    {
+        AutoFile output{fsbridge::fopen(rollback_path, "wb")};
+        const UniValue result{CreateRolledBackUTXOSnapshot(
+            m_node, validated, rollback_base, std::move(output), rollback_path,
+            rollback_path, /*in_memory=*/true)};
+        BOOST_REQUIRE_EQUAL(result["base_height"].getInt<int>(), 110);
+    }
+
+    AutoFile rollback_file{fsbridge::fopen(rollback_path, "rb")};
+    node::SnapshotMetadata metadata{Params().MessageStart()};
+    rollback_file >> metadata;
+    BOOST_REQUIRE_EQUAL(metadata.m_base_blockhash, rollback_base->GetBlockHash());
+    BOOST_REQUIRE_EQUAL(metadata.m_recycle_pool_balance, 7 * COIN);
+
+    // Preserve the headers/block index but reset the test's validated
+    // chainstate to genesis, matching a node that loads a historical snapshot
+    // before background validation has reached its base.
+    {
+        LOCK(cs_main);
+        CBlockIndex* const original_tip{validated.m_chain.Tip()};
+        const uint256 genesis_hash{validated.m_chain[0]->GetBlockHash()};
+        chainman.ResetChainstates();
+        chainman.InitializeChainstate(m_node.mempool.get());
+        Chainstate& background{chainman.ActiveChainstate()};
+        BOOST_REQUIRE(chainman.LoadGenesisBlock());
+        background.InitCoinsDB(1_MiB, /*in_memory=*/true, /*should_wipe=*/false);
+        background.InitCoinsCache(1_MiB);
+        background.CoinsTip().SetBestBlock(genesis_hash);
+        background.LoadChainTip();
+        chainman.MaybeRebalanceCaches();
+        for (CBlockIndex* index{original_tip}; index && index != background.m_chain.Tip(); index = index->pprev) {
+            index->nStatus = BlockStatus::BLOCK_VALID_TREE;
+            index->nTx = 0;
+            index->m_chain_tx_count = 0;
+            index->nSequenceId = 0;
+        }
+        background.PopulateBlockIndexCandidates();
+    }
+    BlockValidationState activate_state;
+    BOOST_REQUIRE(chainman.ActiveChainstate().ActivateBestChain(activate_state));
+    BOOST_REQUIRE_EQUAL(WITH_LOCK(cs_main, return chainman.ActiveHeight()), 0);
+
+    const auto activated{chainman.ActivateSnapshot(rollback_file, metadata, /*in_memory=*/false)};
+    BOOST_REQUIRE(activated);
+
+    Chainstate* loaded_snapshot{nullptr};
+    {
+        LOCK(cs_main);
+        for (const auto& candidate : chainman.m_chainstates) {
+            if (candidate->SnapshotBase() == rollback_base) loaded_snapshot = candidate.get();
+        }
+        BOOST_REQUIRE(loaded_snapshot);
+        BOOST_CHECK_EQUAL(loaded_snapshot->CoinsTip().GetRecyclePoolBalance(), 7 * COIN);
+        BOOST_CHECK_EQUAL(loaded_snapshot->CoinsTip().GetBestBlock(), rollback_base->GetBlockHash());
+        const COutPoint outpoint{m_coinbase_txns.front()->GetHash(), 0};
+        const Coin& coin{loaded_snapshot->CoinsTip().AccessCoin(outpoint)};
+        BOOST_REQUIRE(!coin.IsSpent());
+        BOOST_CHECK(loaded_snapshot->CoinsTip().GetRecycleExpiryBucket(
+            Consensus::UTXOExpiryHeight(coin.nHeight)).contains(outpoint));
+    }
+
+    // Close and reconstruct the snapshot's CoinsViews against the same
+    // on-disk database, exercising the chainstate persistence path without
+    // disturbing the independent background-validation chainstate.
+    {
+        LOCK(cs_main);
+        loaded_snapshot->ResetCoinsViews();
+    }
+    loaded_snapshot->InitCoinsDB(8_MiB, /*in_memory=*/false, /*should_wipe=*/false);
+    {
+        LOCK(cs_main);
+        loaded_snapshot->InitCoinsCache(8_MiB);
+        BOOST_REQUIRE(loaded_snapshot->LoadChainTip());
+        BOOST_CHECK_EQUAL(loaded_snapshot->CoinsTip().GetRecyclePoolBalance(), 7 * COIN);
+        BOOST_CHECK_EQUAL(loaded_snapshot->CoinsTip().GetBestBlock(), rollback_base->GetBlockHash());
+        const COutPoint outpoint{m_coinbase_txns.front()->GetHash(), 0};
+        const Coin& coin{loaded_snapshot->CoinsTip().AccessCoin(outpoint)};
+        BOOST_REQUIRE(!coin.IsSpent());
+        BOOST_CHECK(loaded_snapshot->CoinsTip().GetRecycleExpiryBucket(
+            Consensus::UTXOExpiryHeight(coin.nHeight)).contains(outpoint));
+    }
+}
 
 //! Test basic snapshot activation.
 BOOST_FIXTURE_TEST_CASE(chainstatemanager_activate_snapshot, SnapshotTestSetup)

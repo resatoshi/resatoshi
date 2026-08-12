@@ -162,6 +162,8 @@ public:
         DeploymentOptions dep_opts{};
         bool fastprune{false};
         bool enforce_bip94{false};
+        //! Test fixture override. Normal regtest construction leaves this unset.
+        std::optional<std::vector<AssumeutxoData>> assumeutxo_data{};
     };
 
     struct MainNetOptions {

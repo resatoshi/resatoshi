@@ -231,7 +231,13 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, TestOpts opts)
     gArgs.ForceSetArg("-dnsseed", "0"); // DNS queries are usually forwarded to upstream DNS servers.
     gArgs.ForceSetArg("-natpmp", "0"); // NATPMP sends packets to the router.
 
-    SelectParams(chainType);
+    if (chainType == ChainType::REGTEST && opts.regtest_assumeutxo_data) {
+        CChainParams::RegTestOptions regtest_options;
+        regtest_options.assumeutxo_data = opts.regtest_assumeutxo_data;
+        SelectParams(regtest_options);
+    } else {
+        SelectParams(chainType);
+    }
     InitLogging(*m_node.args);
     AppInitParameterInteraction(*m_node.args);
     LogInstance().StartLogging();

@@ -93,15 +93,6 @@ UniValue WriteUTXOSnapshot(
     const fs::path& temppath,
     const std::function<void()>& interruption_point = {});
 
-UniValue CreateRolledBackUTXOSnapshot(
-    NodeContext& node,
-    Chainstate& chainstate,
-    const CBlockIndex* target,
-    AutoFile&& afile,
-    const fs::path& path,
-    const fs::path& tmppath,
-    bool in_memory);
-
 /* Calculate the difficulty for a given block index.
  */
 double GetDifficulty(const CBlockIndex& blockindex)

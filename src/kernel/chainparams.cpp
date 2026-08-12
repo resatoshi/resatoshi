@@ -576,6 +576,7 @@ public:
                 .blockhash = uint256{"0c552ced4721c249a389eb9b08cb8da261cd46f0e7b5f9d064d48f3113406853"},
             },
         };
+        if (opts.assumeutxo_data) m_assumeutxo_data = *opts.assumeutxo_data;
 
         chainTxData = ChainTxData{
             .nTime = 0,
