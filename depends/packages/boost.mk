@@ -13,6 +13,9 @@ define $(package)_set_vars
   $(package)_config_opts += -DBOOST_INSTALL_LAYOUT=system
   $(package)_config_opts += -DBUILD_TESTING=OFF
   $(package)_config_opts += -DCMAKE_DISABLE_FIND_PACKAGE_ICU=ON
+  ifeq ($(host_os),darwin)
+  $(package)_config_opts += -DCMAKE_INSTALL_NAME_TOOL=true
+  endif
   # Install to a unique path to prevent accidental inclusion via other dependencies' -I flags.
   $(package)_config_opts += -DCMAKE_INSTALL_INCLUDEDIR=$(package)/include
 endef
