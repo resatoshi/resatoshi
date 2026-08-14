@@ -151,6 +151,9 @@ void initialize()
     static auto setup{
         MakeNoLogFileContext<HeadersSyncSetup>(ChainType::MAIN,
                                                {
+                                                   // Exercise headers pre-sync even though ReSatoshi mainnet does not
+                                                   // currently configure a default minimum-chain-work threshold.
+                                                   .minimum_chain_work = ~arith_uint256{},
                                                    .setup_validation_interface = false,
                                                }),
     };
