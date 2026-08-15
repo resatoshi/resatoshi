@@ -151,7 +151,7 @@ class TestNode():
 
         self.ipc_tmp_dir = None
         if ipcbind:
-            self.ipc_socket_path = self.chain_path / "node.sock"
+            self.ipc_socket_path = self.chain_path / "resatoshi-node.sock"
             if len(os.fsencode(self.ipc_socket_path)) < UNIX_PATH_MAX:
                 self.args.append("-ipcbind=unix")
             else:
