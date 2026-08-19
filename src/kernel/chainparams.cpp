@@ -14,11 +14,8 @@
 #include <kernel/messagestartchars.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
-#include <script/interpreter.h>
 #include <script/script.h>
-#include <script/verify_flags.h>
 #include <uint256.h>
-#include <arith_uint256.h>
 #include <util/chaintype.h>
 #include <util/log.h>
 #include <util/strencodings.h>
@@ -29,7 +26,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iterator>
-#include <map>
+#include <initializer_list>
 #include <span>
 #include <utility>
 
@@ -576,6 +573,7 @@ public:
                 .blockhash = uint256{"0c552ced4721c249a389eb9b08cb8da261cd46f0e7b5f9d064d48f3113406853"},
             },
         };
+        if (opts.assumeutxo_data) m_assumeutxo_data = *opts.assumeutxo_data;
 
         chainTxData = ChainTxData{
             .nTime = 0,

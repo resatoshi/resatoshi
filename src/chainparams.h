@@ -28,4 +28,7 @@ const CChainParams &Params();
  */
 void SelectParams(ChainType chain);
 
+/** Select regtest parameters with explicit test-fixture options. */
+void SelectParams(const CChainParams::RegTestOptions& options);
+
 #endif // BITCOIN_CHAINPARAMS_H

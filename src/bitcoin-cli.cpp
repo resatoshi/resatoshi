@@ -819,8 +819,8 @@ static std::optional<UniValue> CallIPC(BaseRequestHandler* rh, const std::string
     } catch (const std::exception& e) {
         // Catch connect error if -ipcconnect=unix was specified
         throw CConnectionFailed{strprintf("%s\n\n"
-            "Probably bitcoin-node is not running or not listening on a unix socket. Can be started with:\n\n"
-            "    bitcoin-node -chain=%s -ipcbind=unix", e.what(), gArgs.GetChainTypeString())};
+            "Probably resatoshi-node is not running or not listening on a unix socket. Can be started with:\n\n"
+            "    resatoshi-node -chain=%s -ipcbind=unix", e.what(), gArgs.GetChainTypeString())};
     }
 
     std::unique_ptr<interfaces::Rpc> rpc{node_init->makeRpc()};

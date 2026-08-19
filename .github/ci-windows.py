@@ -104,11 +104,11 @@ def check_manifests(ci_type):
         return
 
     release_dir = Path.cwd() / "build" / "bin" / "Release"
-    manifest_path = release_dir / "bitcoind.manifest"
+    manifest_path = release_dir / "resatoshid.manifest"
     cmd_bitcoind_manifest = [
         "mt.exe",
         "-nologo",
-        f"-inputresource:{release_dir / 'bitcoind.exe'}",
+        f"-inputresource:{release_dir / 'resatoshid.exe'}",
         f"-out:{manifest_path}",
     ]
     run(cmd_bitcoind_manifest)
@@ -165,13 +165,13 @@ def run_tests(ci_type):
     if ci_type == "standard":
         os.environ["DIR_UNIT_TEST_DATA"] = str(workspace / "unit_test_data")
         test_envs = {
-            "BITCOIN_BIN": "bitcoin.exe",
-            "BITCOIND": "bitcoind.exe",
-            "BITCOINCLI": "bitcoin-cli.exe",
+            "BITCOIN_BIN": "resatoshi.exe",
+            "BITCOIND": "resatoshid.exe",
+            "BITCOINCLI": "resatoshi-cli.exe",
             "BITCOIN_BENCH": "bench_bitcoin.exe",
-            "BITCOINTX": "bitcoin-tx.exe",
-            "BITCOINUTIL": "bitcoin-util.exe",
-            "BITCOINWALLET": "bitcoin-wallet.exe",
+            "BITCOINTX": "resatoshi-tx.exe",
+            "BITCOINUTIL": "resatoshi-util.exe",
+            "BITCOINWALLET": "resatoshi-wallet.exe",
             "BITCOINCHAINSTATE": "bitcoin-chainstate.exe",
         }
         for var, exe in test_envs.items():

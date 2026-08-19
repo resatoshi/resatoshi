@@ -11,7 +11,9 @@ export CI_IMAGE_NAME_TAG="mirror.gcr.io/ubuntu:22.04"
 # Use minimum supported python3.10 and gcc-12, see doc/dependencies.md
 export PACKAGES="gcc-12 g++-12 python3-zmq"
 export DEP_OPTS="CC=gcc-12 CXX=g++-12"
-export TEST_RUNNER_EXTRA="--previous-releases --coverage --extended --exclude feature_dbcrash"  # Run extended tests so that coverage does not fail, but exclude the very slow dbcrash
+# Run extended tests so coverage does not fail. Skip the very slow dbcrash and
+# the coinstats compatibility test, which requires Bitcoin-compatible chain data.
+export TEST_RUNNER_EXTRA="--previous-releases --coverage --extended --exclude feature_dbcrash --exclude feature_coinstatsindex_compatibility"
 export GOAL="install"
 export CI_LIMIT_STACK_SIZE=1
 export DOWNLOAD_PREVIOUS_RELEASES=true

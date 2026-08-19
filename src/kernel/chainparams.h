@@ -6,6 +6,7 @@
 #ifndef BITCOIN_KERNEL_CHAINPARAMS_H
 #define BITCOIN_KERNEL_CHAINPARAMS_H
 
+#include <consensus/amount.h>
 #include <consensus/params.h>
 #include <kernel/messagestartchars.h>
 #include <primitives/block.h>
@@ -46,6 +47,10 @@ struct AssumeutxoData {
     //! The hash of the base block for this snapshot. Used to refer to assumeutxo data
     //! prior to having a loaded blockindex.
     uint256 blockhash;
+
+    //! Consensus Recycle Pool balance at the snapshot base block. This is
+    //! security critical state that cannot be reconstructed from the UTXO set.
+    CAmount recycle_pool_balance{0};
 };
 
 /**
@@ -157,6 +162,8 @@ public:
         DeploymentOptions dep_opts{};
         bool fastprune{false};
         bool enforce_bip94{false};
+        //! Test fixture override. Normal regtest construction leaves this unset.
+        std::optional<std::vector<AssumeutxoData>> assumeutxo_data{};
     };
 
     struct MainNetOptions {

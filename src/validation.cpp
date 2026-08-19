@@ -4196,8 +4196,7 @@ static bool ContextualCheckBlock(const CBlock& block, BlockValidationState& stat
 
     // Enforce BIP113 (Median Time Past).
     bool enforce_locktime_median_time_past{false};
-    if (DeploymentActiveAfter(pindexPrev, chainman, Consensus::DEPLOYMENT_CSV)) {
-        assert(pindexPrev != nullptr);
+    if (pindexPrev != nullptr && DeploymentActiveAfter(pindexPrev, chainman, Consensus::DEPLOYMENT_CSV)) {
         enforce_locktime_median_time_past = true;
     }
 
@@ -5855,6 +5854,15 @@ util::Result<void> ChainstateManager::PopulateAndValidateSnapshot(
 
     const AssumeutxoData& au_data = *maybe_au_data;
 
+    if (!MoneyRange(metadata.m_recycle_pool_balance)) {
+        return util::Error{Untranslated("Snapshot Recycle Pool balance is out of range")};
+    }
+    if (!metadata.MatchesRecyclePoolBalance(au_data.recycle_pool_balance)) {
+        return util::Error{Untranslated(strprintf(
+            "Snapshot Recycle Pool balance mismatch: expected %d, got %d",
+            au_data.recycle_pool_balance, metadata.m_recycle_pool_balance))};
+    }
+
     // This work comparison is a duplicate check with the one performed later in
     // ActivateSnapshot(), but is done so that we avoid doing the long work of staging
     // a snapshot that isn't actually usable.
@@ -5866,6 +5874,7 @@ util::Result<void> ChainstateManager::PopulateAndValidateSnapshot(
     uint64_t coins_left = metadata.m_coins_count;
 
     LogInfo("[snapshot] loading %d coins from snapshot %s", coins_left, base_blockhash.ToString());
+    coins_cache.SetRecyclePoolBalance(metadata.m_recycle_pool_balance);
     int64_t coins_processed{0};
 
     while (coins_left > 0) {
@@ -5886,6 +5895,7 @@ util::Result<void> ChainstateManager::PopulateAndValidateSnapshot(
                 outpoint.hash = txid;
                 coins_file >> coin;
                 if (coin.nHeight > base_height ||
+                    Consensus::IsUTXOExpired(coin.nHeight, base_height) ||
                     outpoint.n >= std::numeric_limits<decltype(outpoint.n)>::max() // Avoid integer wrap-around in coinstats.cpp:ApplyHash
                 ) {
                     return util::Error{Untranslated(strprintf("Bad snapshot data after deserializing %d coins",

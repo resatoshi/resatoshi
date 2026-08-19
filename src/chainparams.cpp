@@ -167,3 +167,9 @@ void SelectParams(const ChainType chain)
     SelectBaseParams(chain);
     globalChainParams = CreateChainParams(gArgs, chain);
 }
+
+void SelectParams(const CChainParams::RegTestOptions& options)
+{
+    SelectBaseParams(ChainType::REGTEST);
+    globalChainParams = CChainParams::RegTest(options);
+}

@@ -318,7 +318,16 @@ class Binaries:
         wrapper executable directly, not to the commands that `bitcoin` calls.
         """
         if self.bin_dir is not None:
-            return [os.path.join(self.bin_dir, os.path.basename(bin_path))]
+            current_name = os.path.basename(bin_path)
+            stem, extension = os.path.splitext(current_name)
+            legacy_names = {
+                "resatoshid": "bitcoind",
+                "resatoshi-cli": "bitcoin-cli",
+                "resatoshi-tx": "bitcoin-tx",
+                "resatoshi-util": "bitcoin-util",
+                "resatoshi-wallet": "bitcoin-wallet",
+            }
+            return [os.path.join(self.bin_dir, legacy_names.get(stem, stem) + extension)]
         elif self.paths.bitcoin_cmd is not None or need_ipc:
             # If the current test needs IPC functionality, use the bitcoin
             # wrapper binary and append -m so it calls multiprocess binaries.

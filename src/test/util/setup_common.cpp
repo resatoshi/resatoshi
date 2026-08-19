@@ -231,7 +231,13 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, TestOpts opts)
     gArgs.ForceSetArg("-dnsseed", "0"); // DNS queries are usually forwarded to upstream DNS servers.
     gArgs.ForceSetArg("-natpmp", "0"); // NATPMP sends packets to the router.
 
-    SelectParams(chainType);
+    if (chainType == ChainType::REGTEST && opts.regtest_assumeutxo_data) {
+        CChainParams::RegTestOptions regtest_options;
+        regtest_options.assumeutxo_data = opts.regtest_assumeutxo_data;
+        SelectParams(regtest_options);
+    } else {
+        SelectParams(chainType);
+    }
     InitLogging(*m_node.args);
     AppInitParameterInteraction(*m_node.args);
     LogInstance().StartLogging();
@@ -305,6 +311,7 @@ ChainTestingSetup::ChainTestingSetup(const ChainType chainType, TestOpts opts)
             .chainparams = chainparams,
             .datadir = m_args.GetDataDirNet(),
             .check_block_index = 1,
+            .minimum_chain_work = opts.minimum_chain_work,
             .notifications = *m_node.notifications,
             .signals = m_node.validation_signals.get(),
             // Use no worker threads while fuzzing to avoid racy non-determinism
